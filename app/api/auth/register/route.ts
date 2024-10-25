@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { hash } from "bcrypt";
 import { PrismaClient } from "@prisma/client";
 
@@ -19,5 +18,5 @@ export async function POST(req: Request) {
     console.log(error);
   }
 
-  return NextResponse.json({ message: "success" });
+  return Error();
 }
