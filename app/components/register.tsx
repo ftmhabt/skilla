@@ -35,6 +35,7 @@ export default function RegisterForm() {
       clearForm();
       if (signupResponse && signupResponse.ok) {
         router.push("/");
+        router.refresh();
       }
     } catch (error) {
       console.log(error);

@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function Signin() {
+export default function Login() {
   const router = useRouter();
   const [error, setError] = useState<null | string>(null);
   const [email, setEmail] = useState("");
@@ -39,6 +39,7 @@ export default function Signin() {
       setError("email or password is incorrect");
     }
   };
+
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader>
