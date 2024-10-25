@@ -13,10 +13,15 @@ export async function POST(req: Request) {
         password: hashedPassword,
       },
     });
-    return user;
+    return new Response(JSON.stringify(user), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.log(error);
+    return new Response(JSON.stringify({ error: "Error creating user" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
-
-  return Error();
 }
