@@ -27,9 +27,9 @@ export default async function RootLayout({
 }>) {
   const session = await getServerSession();
   return (
-    <html lang="en">
+    <html lang="fa" dir="rtl">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex items-center justify-center`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex items-center justify-center`}
       >
         {session ? children : <Login />}
       </body>

@@ -101,9 +101,14 @@ export default function Home() {
       {questions.map((q) => (
         <Fragment key={q.id}>
           <h2>{q.question}</h2>
-          {q.options.map((option, index) => (
-            <p key={index}>{option}</p>
-          ))}
+          <fieldset>
+            {q.options.map((option, index) => (
+              <Fragment key={index}>
+                <input type="radio" name={q.question} id={option} />
+                <label htmlFor={option}>{option}</label>
+              </Fragment>
+            ))}
+          </fieldset>
         </Fragment>
       ))}
       <Logout />
