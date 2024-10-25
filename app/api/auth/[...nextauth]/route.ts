@@ -1,7 +1,10 @@
+import { PrismaClient } from "@prisma/client";
+import { compare } from "bcrypt";
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider from "next-auth/providers/github";
 
+const prisma = new PrismaClient();
 const authConfig: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -20,18 +23,20 @@ const authConfig: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials || !credentials.email || !credentials.password)
           return null;
-
-        const user = {
-          id: "42",
-          email: "ftmh.a78@gmail.com",
-          password: "12345678",
-        };
-        if (
-          credentials.email === user.email &&
-          credentials.password === user.password
-        ) {
-          return user;
-        } else return null;
+        const user = await prisma.user.findFirst({
+          where: {
+            email: credentials.email,
+          },
+        });
+        if (user) {
+          const passCorrect = await compare(
+            credentials.password,
+            user.password
+          );
+          if (passCorrect) {
+            return user;
+          } else return null;
+        }
       },
     }),
     GitHubProvider({
