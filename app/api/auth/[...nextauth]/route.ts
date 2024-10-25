@@ -5,10 +5,11 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider from "next-auth/providers/github";
 
 const prisma = new PrismaClient();
+
 const authConfig: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "sign in",
+      name: "Sign in",
       credentials: {
         email: {
           label: "Email",
@@ -21,22 +22,30 @@ const authConfig: NextAuthOptions = {
         },
       },
       async authorize(credentials) {
-        if (!credentials || !credentials.email || !credentials.password)
-          return null;
+        if (!credentials || !credentials.email || !credentials.password) {
+          return null; // Early return if no credentials
+        }
+
         const user = await prisma.user.findFirst({
           where: {
             email: credentials.email,
           },
         });
+
         if (user) {
           const passCorrect = await compare(
             credentials.password,
             user.password
           );
           if (passCorrect) {
-            return user;
-          } else return null;
+            // Return user object with the expected type
+            return { id: user.id, email: user.email }; // Ensure to return only the necessary properties
+          } else {
+            return null; // Incorrect password
+          }
         }
+
+        return null; // User not found
       },
     }),
     GitHubProvider({
