@@ -14,10 +14,13 @@ import {
   headers,
 } from "@/lib/sessions";
 import { extractJson } from "@axync/extract-json";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TiInputChecked } from "react-icons/ti";
+import { RiAiGenerate } from "react-icons/ri";
 
 export default function Home() {
   const [field, setField] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [questions, setQuestions] = useState<
     | {
@@ -53,6 +56,7 @@ export default function Home() {
   const [checklistSessionId, setChecklistSessionId] = useState<number | null>(
     null
   );
+
   useEffect(() => {
     initializeSessions();
   }, []);
@@ -94,13 +98,14 @@ export default function Home() {
       }
 
       console.log("Message sent:", messageResponse.data);
-      setLoading(false);
     } catch (error) {
       handleError(error);
     }
+    setLoading(false);
   };
 
   const getWeakness = async () => {
+    setLoading(true);
     try {
       const comb = JSON.stringify({ questions, answers });
       const messageResponse = await axios.post(
@@ -126,9 +131,11 @@ export default function Home() {
     } catch (error) {
       handleError(error);
     }
+    setLoading(false);
   };
 
   const getRoadmap = async () => {
+    setLoading(true);
     try {
       const comb = JSON.stringify({ field, weaknesses });
       const messageResponse = await axios.post(
@@ -157,9 +164,11 @@ export default function Home() {
     } catch (error) {
       handleError(error);
     }
+    setLoading(false);
   };
 
   const getChecklist = async (subtopic: string, topic: string) => {
+    setLoading(true);
     const str = subtopic + " در زمینه " + topic;
     try {
       const messageResponse = await axios.post(
@@ -183,6 +192,7 @@ export default function Home() {
     } catch (error) {
       handleError(error);
     }
+    setLoading(false);
   };
 
   const handleAnswerChange = (
@@ -266,6 +276,7 @@ export default function Home() {
           ) : (
             <div>
               <Button
+                disabled={loading}
                 onClick={() => {
                   getWeakness();
                 }}
@@ -277,12 +288,26 @@ export default function Home() {
                   (topic) =>
                     topic.subtopics && (
                       <div key={topic.id}>
-                        <h1>{topic.topic}</h1>
+                        <h1 className="mb-4">{topic.topic}</h1>
                         <ul>
                           {topic.subtopics?.length !== 0 &&
                             topic.subtopics.map((subtopic, index) => (
-                              <li key={index}>
+                              <li
+                                key={index}
+                                className="grid grid-cols-4 p-2 max-w-[350px] items-center content-stretch"
+                              >
+                                <div className="flex gap-2 col-span-3">
+                                  <Checkbox
+                                    id={subtopic}
+                                    value={subtopic}
+                                    className="appearance-none w-[20px] h-[20px]"
+                                  />
+                                  <label htmlFor={subtopic}>{subtopic}</label>
+                                </div>
+
                                 <Button
+                                  className="w-[25px] h-[25px] p-px justify-self-end"
+                                  variant="outline"
                                   value={subtopic}
                                   onClick={() => {
                                     getChecklist(subtopic, topic.topic).then(
@@ -297,20 +322,40 @@ export default function Home() {
                                     );
                                   }}
                                 >
-                                  {subtopic}
+                                  <RiAiGenerate color="#453875" />
                                 </Button>
-                                <ul>
-                                  {topicList.map(
-                                    (topics) =>
-                                      topics.name === subtopic &&
-                                      topics.list &&
-                                      topics.list.map((check) => (
-                                        <li key={`${subtopic}-${check}`}>
-                                          {check}
-                                        </li>
-                                      ))
-                                  )}
-                                </ul>
+                                {topicList.length > 0 && (
+                                  <ul className="col-span-4 flex flex-col gap-4 p-4 items-center">
+                                    {topicList.map(
+                                      (topics) =>
+                                        topics.name === subtopic &&
+                                        topics.list &&
+                                        topics.list.map((check) => (
+                                          <li
+                                            key={`${subtopic}-${check}`}
+                                            className="flex gap-5 relative w-[300px] h-[60px]"
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              id={check}
+                                              value={check}
+                                              className="peer appearance-none w-[300px] h-[60px] bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
+                                            />
+                                            <label
+                                              className="absolute w-[300px] pr-2 pl-5 self-center leading-tight"
+                                              htmlFor={check}
+                                            >
+                                              {check}
+                                            </label>
+                                            <TiInputChecked
+                                              color="#453875"
+                                              className="absolute left-2 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
+                                            />
+                                          </li>
+                                        ))
+                                    )}
+                                  </ul>
+                                )}
                               </li>
                             ))}
                         </ul>
