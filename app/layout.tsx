@@ -29,7 +29,7 @@ export default async function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex items-center justify-center`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex items-center justify-center font-zain`}
       >
         {session ? children : <Login />}
       </body>
