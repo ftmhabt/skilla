@@ -8,5 +8,9 @@ export default function Logout() {
   const signout = () => {
     signOut();
   };
-  return <Button onClick={signout}>logout</Button>;
+  return (
+    <Button onClick={signout} className="mt-auto">
+      logout
+    </Button>
+  );
 }
