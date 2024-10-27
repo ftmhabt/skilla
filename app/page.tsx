@@ -1,12 +1,19 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import Logout from "./components/logout";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import axios from "axios";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import isJson from "@/lib/isJson";
-import extractJson from "@/lib/extractJson";
+import handleError from "@/lib/handleError";
+import {
+  skillSession,
+  skill2Session,
+  roadmapSession,
+  checklistSession,
+  headers,
+} from "@/lib/sessions";
+import { extractJson } from "@axync/extract-json";
 
 export default function Home() {
   const [field, setField] = useState("");
@@ -26,7 +33,6 @@ export default function Home() {
       list: string[] | null;
     }[]
   >([]);
-  const [checklist, setChecklist] = useState<string[] | null>(null);
 
   const [roadmap, setRoadmap] = useState<
     | {
@@ -40,107 +46,65 @@ export default function Home() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [weaknesses, setWeaknesses] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+
+  const [skillSessionId, setSkillSessionId] = useState<number | null>(null);
+  const [skill2SessionId, setSkill2SessionId] = useState<number | null>(null);
+  const [roadmapSessionId, setRoadmapSessionId] = useState<number | null>(null);
+  const [checklistSessionId, setChecklistSessionId] = useState<number | null>(
+    null
+  );
+  useEffect(() => {
+    initializeSessions();
+  }, []);
+
+  const initializeSessions = async () => {
+    setLoading(true);
+    const skillId = await skillSession();
+    setSkillSessionId(skillId);
+    const skill2Id = await skill2Session();
+    setSkill2SessionId(skill2Id);
+    const roadmapId = await roadmapSession();
+    setRoadmapSessionId(roadmapId);
+    const checklistId = await checklistSession();
+    setChecklistSessionId(checklistId);
+    setLoading(false);
+  };
+
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      // First, create a session
-      const sessionResponse = await axios.post(
-        "https://api.metisai.ir/api/v1/chat/session",
-        {
-          botId: process.env.NEXT_PUBLIC_SKILL_BOT_ID,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("session created");
-      const sessionId = sessionResponse.data.id; // Assuming 'id' is the session identifier
-
-      // Then, send a message to that session
-
       const messageResponse = await axios.post(
-        `https://api.metisai.ir/api/v1/chat/session/${sessionId}/message`,
+        `https://api.metisai.ir/api/v1/chat/session/${skillSessionId}/message`,
         {
           message: {
-            content: field, // Ensure 'field' is defined in your code's context
+            content: field,
             type: "USER",
           },
         },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers }
       );
-      let wholeArray = messageResponse.data.content;
-      while (!isJson(wholeArray)) {
-        console.log(wholeArray);
-        const messageResponse = await axios.post(
-          `https://api.metisai.ir/api/v1/chat/session/${sessionId}/message`,
-          {
-            message: {
-              content: "go on",
-              type: "USER",
-            },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        wholeArray += messageResponse.data.content;
+      const str = messageResponse.data.content;
+
+      const array = await extractJson(str);
+      console.log(array);
+
+      if (array) {
+        setQuestions(array);
+        setAnswers(Array(array.length).fill(null));
       }
-      console.log(wholeArray);
-      const array = JSON.parse(wholeArray);
-      setQuestions(array);
-      setAnswers(Array(array.length).fill(null));
 
       console.log("Message sent:", messageResponse.data);
       setLoading(false);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          console.error("Error status:", error.response.status);
-          console.error("Error data:", error.response.data);
-        } else if (error.request) {
-          console.error("No response received:", error.request);
-        } else {
-          console.error("Error message:", error.message);
-        }
-      } else {
-        console.error("Unexpected error:", error);
-      }
+      handleError(error);
     }
   };
 
   const getWeakness = async () => {
     try {
-      // First, create a session
-      const sessionResponse = await axios.post(
-        "https://api.metisai.ir/api/v1/chat/session",
-        {
-          botId: process.env.NEXT_PUBLIC_SKILL_2_BOT_ID,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("session created");
-      const sessionId = sessionResponse.data.id; // Assuming 'id' is the session identifier
-
       const comb = JSON.stringify({ questions, answers });
-      // Then, send a message to that session
       const messageResponse = await axios.post(
-        `https://api.metisai.ir/api/v1/chat/session/${sessionId}/message`,
+        `https://api.metisai.ir/api/v1/chat/session/${skill2SessionId}/message`,
         {
           message: {
             content: comb,
@@ -159,47 +123,16 @@ export default function Home() {
       console.log(array);
       setWeaknesses(array);
       getRoadmap();
-      console.log("Message sent:", messageResponse.data);
-      // setLoading(false);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          console.error("Error status:", error.response.status);
-          console.error("Error data:", error.response.data);
-        } else if (error.request) {
-          console.error("No response received:", error.request);
-        } else {
-          console.error("Error message:", error.message);
-        }
-      } else {
-        console.error("Unexpected error:", error);
-      }
+      handleError(error);
     }
   };
 
   const getRoadmap = async () => {
     try {
-      // First, create a session
-      const sessionResponse = await axios.post(
-        "https://api.metisai.ir/api/v1/chat/session",
-        {
-          botId: process.env.NEXT_PUBLIC_ROADMAP_BOT_ID,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("session created");
-      const sessionId = sessionResponse.data.id; // Assuming 'id' is the session identifier
-      console.log(weaknesses);
       const comb = JSON.stringify({ field, weaknesses });
-      console.log(comb);
-      // Then, send a message to that session
       const messageResponse = await axios.post(
-        `https://api.metisai.ir/api/v1/chat/session/${sessionId}/message`,
+        `https://api.metisai.ir/api/v1/chat/session/${roadmapSessionId}/message`,
         {
           message: {
             content: comb,
@@ -213,70 +146,24 @@ export default function Home() {
           },
         }
       );
-      console.log(messageResponse.data.content);
-      let wholeArray = messageResponse.data.content;
-      while (!isJson(wholeArray)) {
-        console.log(wholeArray);
+      const str = messageResponse.data.content;
 
-        const sequelResponse = await axios.post(
-          `https://api.metisai.ir/api/v1/chat/session/${sessionId}/message`,
-          {
-            message: {
-              content: "go on",
-              type: "USER",
-            },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        wholeArray += sequelResponse.data.content;
-      }
-      console.log(wholeArray);
-      const array = JSON.parse(wholeArray);
+      const array = await extractJson(str);
+      console.log(array);
+
       setRoadmap(array);
       console.log("Message sent:", messageResponse.data);
       // setLoading(false);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          console.error("Error status:", error.response.status);
-          console.error("Error data:", error.response.data);
-        } else if (error.request) {
-          console.error("No response received:", error.request);
-        } else {
-          console.error("Error message:", error.message);
-        }
-      } else {
-        console.error("Unexpected error:", error);
-      }
+      handleError(error);
     }
   };
 
   const getChecklist = async (subtopic: string, topic: string) => {
     const str = subtopic + " در زمینه " + topic;
     try {
-      // First, create a session
-      const sessionResponse = await axios.post(
-        "https://api.metisai.ir/api/v1/chat/session",
-        {
-          botId: process.env.NEXT_PUBLIC_CHECKLIST_BOT_ID,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("session created");
-      const sessionId = sessionResponse.data.id;
-
       const messageResponse = await axios.post(
-        `https://api.metisai.ir/api/v1/chat/session/${sessionId}/message`,
+        `https://api.metisai.ir/api/v1/chat/session/${checklistSessionId}/message`,
         {
           message: {
             content: str,
@@ -294,18 +181,7 @@ export default function Home() {
       const jsonString = messageResponse.data.content;
       return JSON.parse(jsonString);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          console.error("Error status:", error.response.status);
-          console.error("Error data:", error.response.data);
-        } else if (error.request) {
-          console.error("No response received:", error.request);
-        } else {
-          console.error("Error message:", error.message);
-        }
-      } else {
-        console.error("Unexpected error:", error);
-      }
+      handleError(error);
     }
   };
 
@@ -351,31 +227,34 @@ export default function Home() {
           {!submitted ? (
             <div>
               {questions &&
-                questions.map((q, questionIndex) => (
-                  <Fragment key={q.id}>
-                    <h2>{q.question}</h2>
-                    <RadioGroup
-                      className="flex flex-col gap-3"
-                      dir="rtl"
-                      value={answers[questionIndex]?.toString()}
-                      onValueChange={(value) =>
-                        handleAnswerChange(questionIndex, parseInt(value))
-                      }
-                    >
-                      {q.options.map((option, optionIndex) => (
-                        <div key={optionIndex} className="flex gap-3">
-                          <RadioGroupItem
-                            value={optionIndex.toString()}
-                            id={`${q.id}-${optionIndex}`}
-                          />
-                          <Label htmlFor={`${q.id}-${optionIndex}`}>
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </Fragment>
-                ))}
+                questions.map(
+                  (q, questionIndex) =>
+                    q.options && (
+                      <Fragment key={q.id}>
+                        <h2>{q.question}</h2>
+                        <RadioGroup
+                          className="flex flex-col gap-3"
+                          dir="rtl"
+                          value={answers[questionIndex]?.toString()}
+                          onValueChange={(value) =>
+                            handleAnswerChange(questionIndex, parseInt(value))
+                          }
+                        >
+                          {q.options.map((option, optionIndex) => (
+                            <div key={optionIndex} className="flex gap-3">
+                              <RadioGroupItem
+                                value={optionIndex.toString()}
+                                id={`${q.id}-${optionIndex}`}
+                              />
+                              <Label htmlFor={`${q.id}-${optionIndex}`}>
+                                {option}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </Fragment>
+                    )
+                )}
               <Button
                 onClick={() => {
                   setSubmitted(true);
@@ -394,47 +273,50 @@ export default function Home() {
                 تولید نقشه راه
               </Button>
               {roadmap &&
-                roadmap.map((topic) => (
-                  <div key={topic.id}>
-                    <h1>{topic.topic}</h1>
-                    <ul>
-                      {topic.subtopics?.length !== 0 &&
-                        topic.subtopics.map((subtopic, index) => (
-                          <li key={index}>
-                            <Button
-                              value={subtopic}
-                              onClick={() => {
-                                getChecklist(subtopic, topic.topic).then(
-                                  (res) =>
-                                    setTopicList((prevTopicList) => [
-                                      ...prevTopicList,
-                                      {
-                                        name: subtopic,
-                                        list: res,
-                                      },
-                                    ])
-                                );
-                              }}
-                            >
-                              {subtopic}
-                            </Button>
-                            <ul>
-                              {topicList.map(
-                                (topics) =>
-                                  topics.name === subtopic &&
-                                  topics.list &&
-                                  topics.list.map((check) => (
-                                    <li key={`${subtopic}-${check}`}>
-                                      {check}
-                                    </li>
-                                  ))
-                              )}
-                            </ul>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                ))}
+                roadmap.map(
+                  (topic) =>
+                    topic.subtopics && (
+                      <div key={topic.id}>
+                        <h1>{topic.topic}</h1>
+                        <ul>
+                          {topic.subtopics?.length !== 0 &&
+                            topic.subtopics.map((subtopic, index) => (
+                              <li key={index}>
+                                <Button
+                                  value={subtopic}
+                                  onClick={() => {
+                                    getChecklist(subtopic, topic.topic).then(
+                                      (res) =>
+                                        setTopicList((prevTopicList) => [
+                                          ...prevTopicList,
+                                          {
+                                            name: subtopic,
+                                            list: res,
+                                          },
+                                        ])
+                                    );
+                                  }}
+                                >
+                                  {subtopic}
+                                </Button>
+                                <ul>
+                                  {topicList.map(
+                                    (topics) =>
+                                      topics.name === subtopic &&
+                                      topics.list &&
+                                      topics.list.map((check) => (
+                                        <li key={`${subtopic}-${check}`}>
+                                          {check}
+                                        </li>
+                                      ))
+                                  )}
+                                </ul>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )
+                )}
             </div>
           )}
         </div>
