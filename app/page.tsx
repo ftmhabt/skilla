@@ -58,7 +58,7 @@ export default function Home() {
   );
 
   useEffect(() => {
-    initializeSessions();
+    // initializeSessions();
   }, []);
 
   const initializeSessions = async () => {
@@ -206,7 +206,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-3 min-h-96">
-      {/* <Skills /> */}
+      <Skills />
       <h1>Skill Assessment</h1>
       {!questions ? (
         <>

@@ -4,22 +4,19 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Plus } from "lucide-react";
 import { Skill } from "@prisma/client";
+import axios from "axios";
 export default function Skills() {
   const [skillInput, setSkillInput] = useState("");
   const [skills, setSkills] = useState<{ id: number; name: string }[]>([]);
 
   const handleAddSkill = async () => {
-    const response = await fetch("/api/skills", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name: skillInput }),
+    const response = await axios.post("/api/skills", {
+      name: skillInput,
     });
 
-    if (response.ok) {
-      const updatedSkills = await response.json();
-      updatedSkills.map((data: Skill) => {
+    if (response.data) {
+      const updatedSkills = response.data;
+      updatedSkills.forEach((data: Skill) => {
         setSkills([...skills, { id: data.id, name: data.name }]);
       });
 
@@ -29,11 +26,18 @@ export default function Skills() {
 
   useEffect(() => {
     const fetchSkills = async () => {
-      const response = await fetch("/api/skills");
-      const skillsData = await response.json();
-      skillsData.map((data: Skill) => {
-        setSkills([...skills, { id: data.id, name: data.name }]);
-      });
+      try {
+        const response = await axios.get("/api/skills");
+        console.log(response);
+        const skillsData = response.data;
+        if (skillsData.length > 0) {
+          skillsData.forEach((data: Skill) => {
+            setSkills([...skills, { id: data.id, name: data.name }]);
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching skills:", error);
+      }
     };
     fetchSkills();
   }, []);
@@ -51,14 +55,14 @@ export default function Skills() {
           <Plus />
         </Button>
       </div>
-      <div>
+      <div className="flex gap-4">
         {skills.length > 0 &&
           skills.map((skill) => (
             <div
               key={skill.id}
-              className="bg-secondary w-[100px] h-[100px] rounded-full"
+              className="bg-secondary w-[100px] h-[100px] rounded-full flex justify-center items-center"
             >
-              {skill.name}
+              <h1>{skill.name}</h1>
             </div>
           ))}
       </div>
