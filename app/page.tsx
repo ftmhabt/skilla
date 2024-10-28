@@ -17,7 +17,7 @@ import { extractJson } from "@axync/extract-json";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TiInputChecked } from "react-icons/ti";
 import { RiAiGenerate } from "react-icons/ri";
-
+import Skills from "@/components/skills";
 export default function Home() {
   const [field, setField] = useState("");
   const [loading, setLoading] = useState(true);
@@ -160,7 +160,7 @@ export default function Home() {
 
       setRoadmap(array);
       console.log("Message sent:", messageResponse.data);
-      // setLoading(false);
+      setLoading(false);
     } catch (error) {
       handleError(error);
     }
@@ -206,6 +206,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-3 min-h-96">
+      {/* <Skills /> */}
       <h1>Skill Assessment</h1>
       {!questions ? (
         <>

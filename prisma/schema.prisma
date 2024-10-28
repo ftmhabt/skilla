@@ -14,7 +14,55 @@ datasource db {
 }
 
 model User {
-  id       String @id @default(uuid())
-  email    String @unique
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
   password String
+  skills   Skill[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Skill {
+  id         Int        @id @default(autoincrement())
+  name       String
+  weakness   String[]
+  questions  Question[]
+  topics     Topic[]
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  User       User       @relation(fields: [userId], references: [id])
+  userId     Int
+}
+
+model Question {
+  id      Int      @id @default(autoincrement())
+  text    String
+  options String[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  Skill      Skill    @relation(fields: [skillId], references: [id])
+  skillId    Int
+}
+
+model Topic {
+  id         Int        @id @default(autoincrement())
+  name       String
+  subtopics  SubTopic[]
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  Skill      Skill      @relation(fields: [skillId], references: [id])
+  skillId    Int
+}
+
+model SubTopic {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  Topic      Topic    @relation(fields: [topicId], references: [id])
+  topicId    Int
 }
