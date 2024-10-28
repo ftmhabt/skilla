@@ -32,8 +32,8 @@ model Skill {
   topics     Topic[]
   created_at DateTime   @default(now())
   updated_at DateTime   @updatedAt
-  User       User       @relation(fields: [userId], references: [id])
-  userId     Int
+  User       User?      @relation(fields: [userId], references: [id])
+  userId     Int?
 }
 
 model Question {
