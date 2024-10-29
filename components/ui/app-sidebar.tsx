@@ -1,4 +1,12 @@
-import { Calendar, Inbox, Lightbulb, Search, Settings } from "lucide-react";
+import {
+  Calendar,
+  Inbox,
+  Lightbulb,
+  LogOut,
+  Search,
+  Settings,
+  UserRound,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -69,9 +77,15 @@ export function AppSidebar() {
                       <h1>name</h1>
                     </div>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="flex flex-col items-start gap-2 mr-9">
-                    <Link href="/profile">Profile</Link>
-                    <Link href="/auth">Logout</Link>
+                  <CollapsibleContent className="flex flex-col items-start gap-2 p-1 *:flex *:gap-2 *:items-center">
+                    <Link href="/profile">
+                      <UserRound size={16} />
+                      <h1>Profile</h1>
+                    </Link>
+                    <Link href="/auth">
+                      <LogOut size={16} />
+                      <h1>Logout</h1>
+                    </Link>
                   </CollapsibleContent>
                 </Collapsible>
                 <ModeToggle />
