@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { ModeToggle } from "@/app/components/mode-toggle";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import Link from "next/link";
 import {
