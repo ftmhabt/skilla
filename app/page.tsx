@@ -17,7 +17,7 @@ import { extractJson } from "@axync/extract-json";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TiInputChecked } from "react-icons/ti";
 import { RiAiGenerate } from "react-icons/ri";
-import Skills from "@/components/skills";
+import Skills from "@/app/components/skills";
 export default function Home() {
   const [field, setField] = useState("");
   const [loading, setLoading] = useState(true);

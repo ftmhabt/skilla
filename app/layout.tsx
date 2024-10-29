@@ -5,6 +5,7 @@ import "./globals.css";
 // import Login from "./components/login";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/app-sidebar";
+import { ThemeProvider } from "next-themes";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -33,15 +34,22 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex items-center justify-center font-zain`}
       >
-        <SidebarProvider>
-          <AppSidebar />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={true}
+          storageKey="planit-theme"
+        >
+          <SidebarProvider>
+            <AppSidebar />
 
-          {/* {session ? children : <Login />} */}
-          <main className="grow p-4">
-            <SidebarTrigger />
-            {children}
-          </main>
-        </SidebarProvider>
+            {/* {session ? children : <Login />} */}
+            <main className="grow p-4">
+              <SidebarTrigger />
+              {children}
+            </main>
+          </SidebarProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
