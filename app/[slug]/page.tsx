@@ -305,110 +305,122 @@ export default function Home({ params }: { params: { slug: string } }) {
         </div>
       ) : (
         <>
-          <Button
-            disabled={loading}
-            onClick={() => {
-              getWeakness();
-            }}
-          >
-            {loading ? (
-              <Image src={loadingSvg} width={20} height={20} alt="loading" />
-            ) : (
-              "تولید نقشه راه"
-            )}
-          </Button>
-          {newField?.roadmap.map(
-            (item) =>
-              item.subtopics && (
-                <div key={item.id}>
-                  <h1 className="mb-4">{item.topic}</h1>
-                  <ul>
-                    {item.subtopics &&
-                      item.subtopics.map((sub, index) => (
-                        <li
-                          key={index}
-                          className="grid grid-cols-4 p-2 max-w-[350px] items-center content-stretch"
-                        >
-                          <div className="flex gap-2 col-span-3">
-                            <Checkbox
-                              id={sub.name}
-                              value={sub.name}
-                              checked={sub.isChecked}
-                              onChange={(e) => {
-                                const target = e.target as HTMLInputElement;
-                                const isChecked = target.checked;
-                                if (newField) {
-                                  const updatedRoadmap = newField.roadmap.map(
-                                    (i) => {
-                                      if (i.id === item.id) {
-                                        return {
-                                          ...i,
-                                          subtopics:
-                                            i.subtopics?.map((sub) => {
-                                              if (sub.name === sub.name) {
-                                                return { ...sub, isChecked };
-                                              }
-                                              return sub;
-                                            }) || null,
-                                        };
-                                      }
-                                      return item;
-                                    }
-                                  );
-
-                                  newField.roadmap = updatedRoadmap;
-                                  updateItemInArray(newField.id);
-                                }
-                              }}
-                              className="appearance-none w-[20px] h-[20px]"
-                            />
-                            <label htmlFor={sub.name}>{sub.name}</label>
-                          </div>
-
-                          <Button
-                            className="w-[25px] h-[25px] p-px justify-self-end"
-                            variant="outline"
-                            disabled={loading}
-                            value={sub.name}
-                            onClick={() => {
-                              getChecklist(sub.name, item.topic);
-                            }}
+          {newField?.roadmap && newField.roadmap.length === 0 ? (
+            <Button
+              disabled={loading}
+              onClick={() => {
+                getWeakness();
+              }}
+            >
+              {loading ? (
+                <Image src={loadingSvg} width={20} height={20} alt="loading" />
+              ) : (
+                "تولید نقشه راه"
+              )}
+            </Button>
+          ) : (
+            newField?.roadmap.map(
+              (item) =>
+                item.subtopics && (
+                  <div key={item.id}>
+                    <h1 className="mb-4">{item.topic}</h1>
+                    <ul>
+                      {item.subtopics &&
+                        item.subtopics.map((sub, index) => (
+                          <li
+                            key={index}
+                            className="grid grid-cols-4 p-2 max-w-[350px] items-center content-stretch"
                           >
-                            <RiAiGenerate color="#453875" />
-                          </Button>
-                          {sub.checklist && sub.checklist.length > 0 && (
-                            <ul className="col-span-4 flex flex-col gap-4 p-4 items-center">
-                              {sub.checklist.map((i) => (
-                                <li
-                                  key={i.name}
-                                  className="flex gap-5 relative w-[300px] h-[60px]"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    id={i.name}
-                                    value={i.name}
-                                    checked={i.isChecked}
-                                    className="peer appearance-none w-[300px] h-[60px] bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
-                                  />
-                                  <label
-                                    className="absolute w-[300px] pr-2 pl-5 self-center leading-tight"
-                                    htmlFor={i.name}
+                            <div className="flex gap-2 col-span-3">
+                              <Checkbox
+                                id={sub.name}
+                                value={sub.name}
+                                checked={sub.isChecked}
+                                onChange={(e) => {
+                                  const target = e.target as HTMLInputElement;
+                                  const isChecked = target.checked;
+
+                                  if (newField) {
+                                    const updatedRoadmap = newField.roadmap.map(
+                                      (roadmapItem) => {
+                                        if (roadmapItem.id === item.id) {
+                                          return {
+                                            ...roadmapItem,
+                                            subtopics:
+                                              roadmapItem.subtopics?.map(
+                                                (subtopicItem) => {
+                                                  if (
+                                                    subtopicItem.name ===
+                                                    sub.name
+                                                  ) {
+                                                    return {
+                                                      ...subtopicItem,
+                                                      isChecked,
+                                                    };
+                                                  }
+                                                  return subtopicItem;
+                                                }
+                                              ) || null,
+                                          };
+                                        }
+                                        return roadmapItem;
+                                      }
+                                    );
+
+                                    newField.roadmap = updatedRoadmap;
+                                    updateItemInArray(newField.id);
+                                  }
+                                }}
+                                className="appearance-none w-[20px] h-[20px]"
+                              />
+                              <label htmlFor={sub.name}>{sub.name}</label>
+                            </div>
+
+                            <Button
+                              className="w-[25px] h-[25px] p-px justify-self-end"
+                              variant="outline"
+                              disabled={loading}
+                              value={sub.name}
+                              onClick={() => {
+                                getChecklist(sub.name, item.topic);
+                              }}
+                            >
+                              <RiAiGenerate color="#453875" />
+                            </Button>
+                            {sub.checklist && sub.checklist.length > 0 && (
+                              <ul className="col-span-4 flex flex-col gap-4 p-4 items-center">
+                                {sub.checklist.map((i) => (
+                                  <li
+                                    key={i.name}
+                                    className="flex gap-5 relative w-[300px] h-[60px]"
                                   >
-                                    {i.name}
-                                  </label>
-                                  <TiInputChecked
-                                    color="#453875"
-                                    className="absolute left-2 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
-                                  />
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              )
+                                    <input
+                                      type="checkbox"
+                                      id={i.name}
+                                      value={i.name}
+                                      checked={i.isChecked}
+                                      className="peer appearance-none w-[300px] h-[60px] bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
+                                    />
+                                    <label
+                                      className="absolute w-[300px] pr-2 pl-5 self-center leading-tight"
+                                      htmlFor={i.name}
+                                    >
+                                      {i.name}
+                                    </label>
+                                    <TiInputChecked
+                                      color="#453875"
+                                      className="absolute left-2 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
+                                    />
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )
+            )
           )}
         </>
       )}
