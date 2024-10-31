@@ -1,5 +1,11 @@
 "use client";
-import { createContext, ReactNode, useState, useContext } from "react";
+import {
+  createContext,
+  ReactNode,
+  useState,
+  useContext,
+  useEffect,
+} from "react";
 
 export interface Field {
   id: number;
@@ -31,6 +37,21 @@ const GlobalContext = createContext<GlobalContextType | null>(null);
 
 export const GlobalProvider = ({ children }: { children: ReactNode }) => {
   const [fields, setFields] = useState<Field[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedFields = localStorage.getItem("fields");
+      if (savedFields) {
+        setFields(JSON.parse(savedFields));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fields", JSON.stringify(fields));
+    }
+  }, [fields]);
 
   return (
     <GlobalContext.Provider value={{ fields, setFields }}>
