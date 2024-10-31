@@ -17,6 +17,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TiInputChecked } from "react-icons/ti";
 import { RiAiGenerate } from "react-icons/ri";
 import { useGlobalContext } from "@/context/context";
+import loadingSvg from "../img/loading.svg";
+import Image from "next/image";
 
 export default function Home({ params }: { params: { slug: string } }) {
   const { fields, setFields } = useGlobalContext();
@@ -250,7 +252,11 @@ export default function Home({ params }: { params: { slug: string } }) {
       {newField?.roadmap.length === 0 && !questions && (
         <>
           <Button onClick={fetchQuestions} disabled={loading}>
-            {loading ? "صبر کنید" : "تولید سوالات"}
+            {loading ? (
+              <Image src={loadingSvg} width={20} height={20} alt="loading" />
+            ) : (
+              "تولید سوالات"
+            )}
           </Button>
           {questionGenerationError && "نشد :( یه بار دیگه امتحان کن"}
         </>
@@ -305,7 +311,11 @@ export default function Home({ params }: { params: { slug: string } }) {
               getWeakness();
             }}
           >
-            تولید نقشه راه
+            {loading ? (
+              <Image src={loadingSvg} width={20} height={20} alt="loading" />
+            ) : (
+              "تولید نقشه راه"
+            )}
           </Button>
           {newField?.roadmap.map(
             (item) =>
@@ -324,6 +334,32 @@ export default function Home({ params }: { params: { slug: string } }) {
                               id={sub.name}
                               value={sub.name}
                               checked={sub.isChecked}
+                              onChange={(e) => {
+                                const target = e.target as HTMLInputElement;
+                                const isChecked = target.checked;
+                                if (newField) {
+                                  const updatedRoadmap = newField.roadmap.map(
+                                    (i) => {
+                                      if (i.id === item.id) {
+                                        return {
+                                          ...i,
+                                          subtopics:
+                                            i.subtopics?.map((sub) => {
+                                              if (sub.name === sub.name) {
+                                                return { ...sub, isChecked };
+                                              }
+                                              return sub;
+                                            }) || null,
+                                        };
+                                      }
+                                      return item;
+                                    }
+                                  );
+
+                                  newField.roadmap = updatedRoadmap;
+                                  updateItemInArray(newField.id);
+                                }
+                              }}
                               className="appearance-none w-[20px] h-[20px]"
                             />
                             <label htmlFor={sub.name}>{sub.name}</label>
