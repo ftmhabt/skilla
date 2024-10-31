@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-// import { getServerSession } from "next-auth";
-// import Login from "./components/login";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/ui/app-sidebar";
 import { ThemeProvider } from "next-themes";
+import Navbar from "./components/navbar";
+import { GlobalProvider } from "@/context/context";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -28,11 +26,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // const session = await getServerSession();
   return (
     <html lang="fa" dir="rtl">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex items-center justify-center font-zain`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased  min-h-screen flex items-center justify-center font-zain`}
       >
         <ThemeProvider
           attribute="class"
@@ -40,15 +37,12 @@ export default async function RootLayout({
           enableSystem={true}
           storageKey="planit-theme"
         >
-          <SidebarProvider>
-            <AppSidebar />
-
-            {/* {session ? children : <Login />} */}
-            <main className="grow p-4">
-              <SidebarTrigger />
-              {children}
-            </main>
-          </SidebarProvider>
+          <GlobalProvider>
+            <div className="flex flex-col w-screen min-h-screen">
+              <Navbar />
+              <main className="grow p-4">{children}</main>
+            </div>
+          </GlobalProvider>
         </ThemeProvider>
       </body>
     </html>

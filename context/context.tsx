@@ -1,31 +1,30 @@
-import {
-  createContext,
-  ReactNode,
-  useState,
-  Dispatch,
-  SetStateAction,
-  useContext,
-} from "react";
+"use client";
+import { createContext, ReactNode, useState, useContext } from "react";
 
-interface Field {
-  fields: {
-    name: string;
-    checklist: {
-      topic: {
-        name: string;
-        isChecked: boolean;
-      };
-      subTopic: {
-        name: string;
-        isChecked: boolean;
-      }[];
-    }[];
-  };
+export interface Field {
+  id: number;
+  name: string;
+  roadmap: {
+    id: number;
+    topic: string;
+    subtopics:
+      | {
+          name: string;
+          isChecked: boolean;
+          checklist:
+            | {
+                name: string;
+                isChecked: boolean;
+              }[]
+            | null;
+        }[]
+      | null;
+  }[];
 }
 
 interface GlobalContextType {
   fields: Field[];
-  setFields: Dispatch<SetStateAction<Field[]>>;
+  setFields: (input: Field[]) => void;
 }
 
 const GlobalContext = createContext<GlobalContextType | null>(null);

@@ -15,11 +15,7 @@ const Navbar = () => {
   return (
     <nav className="bg-primary dark:bg-slate-700 text-white">
       <div className="py-2 container mx-auto px-5 flex justify-between items-center">
-        <div>
-          <p className="text-3xl">Planit</p>
-        </div>
         <div className="flex items-center">
-          <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none">
               <Avatar>
@@ -39,6 +35,10 @@ const Navbar = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        <ModeToggle />
+        <Link href={"/"} className="text-3xl">
+          skilla
+        </Link>
       </div>
     </nav>
   );

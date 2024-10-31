@@ -1,5 +1,6 @@
 import {
   Calendar,
+  ChartCandlestick,
   Inbox,
   Lightbulb,
   LogOut,
@@ -33,9 +34,9 @@ const items = [
     icon: Lightbulb,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
+    title: "ارزیابی",
+    url: "/assessment",
+    icon: ChartCandlestick,
   },
   {
     title: "Calendar",
