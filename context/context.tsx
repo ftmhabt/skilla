@@ -4,54 +4,42 @@ import {
   ReactNode,
   useState,
   useContext,
-  useEffect,
+  Dispatch,
+  SetStateAction,
 } from "react";
 
 export interface Field {
   id: number;
   name: string;
-  roadmap: {
-    id: number;
-    topic: string;
-    subtopics:
-      | {
-          name: string;
-          isChecked: boolean;
-          checklist:
-            | {
-                name: string;
-                isChecked: boolean;
-              }[]
-            | null;
-        }[]
-      | null;
-  }[];
+  roadmap:
+    | {
+        id: number;
+        topic: string;
+        subtopics:
+          | {
+              name: string;
+              isChecked: boolean;
+              checklist:
+                | {
+                    name: string;
+                    isChecked: boolean;
+                  }[]
+                | null;
+            }[]
+          | null;
+      }[]
+    | null;
 }
 
 interface GlobalContextType {
   fields: Field[];
-  setFields: (input: Field[]) => void;
+  setFields: Dispatch<SetStateAction<Field[]>>;
 }
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
 
 export const GlobalProvider = ({ children }: { children: ReactNode }) => {
   const [fields, setFields] = useState<Field[]>([]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedFields = localStorage.getItem("fields");
-      if (savedFields) {
-        setFields(JSON.parse(savedFields));
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("fields", JSON.stringify(fields));
-    }
-  }, [fields]);
 
   return (
     <GlobalContext.Provider value={{ fields, setFields }}>
