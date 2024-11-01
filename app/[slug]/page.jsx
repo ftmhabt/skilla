@@ -39,7 +39,7 @@ export default function Home({ params }) {
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
     systemInstruction:
-      "یه زمینه برنامه نویسی دریافت کن و بر اساس اون یه پرسشنامه چهار گزینه ای براس سنجش دانش کاربر به فارسی بساز. اطمینان حاصل کن که سوالاتی که از کاربر پرسیده می‌شود، به اندازه کافی متنوع و گسترده باشند. می‌توانی سوالات را در زمینه‌های مختلف مانند مفاهیم پایه، الگوریتم‌ها، ساختار داده‌ها، ابزارهای خاص، فریم‌ورک‌ها، و تجربه عملی طراحی کنی. دقیقا 10 سوال بپرس ",
+      "یه زمینه برنامه نویسی دریافت کن و بر اساسش پرسشنامه چهار گزینه ای به فارسی بساز تا بتونی بفهمی فرد در اون زمینه چقدر مهارت داره. اطمینان حاصل کن که سوالاتی که از کاربر پرسیده می‌شود، به اندازه کافی متنوع و گسترده باشند. می‌توانی سوالات را در زمینه‌های مختلف مانند مفاهیم پایه، الگوریتم‌ها، ساختار داده‌ها، ابزارهای خاص، فریم‌ورک‌ها، و تجربه عملی طراحی کنی. دقیقا 10 سوال بپرس. id  ها همه باید یونیک باشن و از 5 رقم رندوم تشکیل شده باشن. id سوالات باید با id گزینه ها تفاوت داشته باشن",
   });
   const weaknessModel = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
@@ -158,7 +158,16 @@ export default function Home({ params }) {
               options: {
                 type: "array",
                 items: {
-                  type: "string",
+                  type: "object",
+                  properties: {
+                    value: {
+                      type: "string",
+                    },
+                    id: {
+                      type: "number",
+                    },
+                  },
+                  required: ["value", "id"],
                 },
               },
             },
@@ -380,26 +389,26 @@ export default function Home({ params }) {
             {questions && (
               <>
                 {questions.map(
-                  (q, questionIndex) =>
+                  (q) =>
                     q.options && (
                       <Fragment key={q.id}>
                         <h2>{q.question}</h2>
                         <RadioGroup
                           className="flex flex-col gap-3"
                           dir="rtl"
-                          value={answers[questionIndex]?.toString()}
+                          value={answers[q.id]?.toString()}
                           onValueChange={(value) =>
-                            handleAnswerChange(questionIndex, parseInt(value))
+                            handleAnswerChange(q.id, value)
                           }
                         >
-                          {q.options.map((option, optionIndex) => (
-                            <div key={optionIndex} className="flex gap-3">
+                          {q.options.map((option) => (
+                            <div key={option.id} className="flex gap-3">
                               <RadioGroupItem
-                                value={optionIndex.toString()}
-                                id={`${q.id}-${optionIndex}`}
+                                value={option.value}
+                                id={option.id.toString()}
                               />
-                              <Label htmlFor={`${q.id}-${optionIndex}`}>
-                                {option}
+                              <Label htmlFor={option.id.toString()}>
+                                {option.value}
                               </Label>
                             </div>
                           ))}
