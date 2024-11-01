@@ -43,7 +43,11 @@ export default function Skills() {
           type="text"
           placeholder="چه مهارتی رو میخوای ارتقا بدی؟"
           value={skillInput}
-          onChange={(e) => setSkillInput(e.target.value)}
+          onChange={(e) =>
+            setSkillInput(
+              e.target.value.replace(/%20/g, "-").replace(/\s+/g, "-")
+            )
+          }
         />
         <Button onClick={handleAddSkill}>
           <Plus />

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Fragment, useEffect, useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { TiInputChecked } from "react-icons/ti";
 import { RiAiGenerate } from "react-icons/ri";
 import loadingSvg from "../img/loading.svg";
@@ -14,7 +13,8 @@ import { db } from "@/db/db";
 
 export default function Home({ params }) {
   const [loading, setLoading] = useState(false);
-  const [fieldName] = useState(params.slug);
+  const noSpaceSlug = params.slug.replace(/%20/g, "-").replace(/\s+/g, "-");
+  const [fieldName] = useState(noSpaceSlug);
   const newField = useLiveQuery(async () => {
     return await db.fields.where("name").equals(fieldName).toArray();
   });
