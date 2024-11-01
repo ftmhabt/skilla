@@ -39,7 +39,7 @@ export default function Home({ params }) {
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
     systemInstruction:
-      "یه زمینه برنامه نویسی دریافت کن و بر اساسش پرسشنامه چهار گزینه ای به فارسی بساز تا بتونی بفهمی فرد در اون زمینه چقدر مهارت داره. اطمینان حاصل کن که سوالاتی که از کاربر پرسیده می‌شود، به اندازه کافی متنوع و گسترده باشند. می‌توانی سوالات را در زمینه‌های مختلف مانند مفاهیم پایه، الگوریتم‌ها، ساختار داده‌ها، ابزارهای خاص، فریم‌ورک‌ها، و تجربه عملی طراحی کنی. دقیقا 10 سوال بپرس. id  ها همه باید یونیک باشن و از 5 رقم رندوم تشکیل شده باشن. id سوالات باید با id گزینه ها تفاوت داشته باشن",
+      "یه زمینه برنامه نویسی دریافت کن و بر اساسش پرسشنامه چهار گزینه ای به فارسی بساز تا بتونی بفهمی فرد در اون زمینه چقدر مهارت داره. اطمینان حاصل کن که سوالاتی که از کاربر پرسیده می‌شود، به اندازه کافی متنوع و گسترده باشند. می‌توانی سوالات را در زمینه‌های مختلف مانند مفاهیم پایه، الگوریتم‌ها، ساختار داده‌ها، ابزارهای خاص، فریم‌ورک‌ها، و تجربه عملی طراحی کنی. دقیقا 10 سوال بپرس. id  ها همه باید یونیک باشن",
   });
   const weaknessModel = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
@@ -212,6 +212,7 @@ export default function Home({ params }) {
       if (topic.id === topicId) {
         const updatedSubtopics = topic.subtopics.map((subtopic) => {
           if (subtopic.name === subtopicName) {
+            console.log(`Updating ${subtopicName} to ${isChecked}`); // Debugging log
             return { ...subtopic, isChecked };
           }
           return subtopic;
@@ -405,9 +406,11 @@ export default function Home({ params }) {
                             <div key={option.id} className="flex gap-3">
                               <RadioGroupItem
                                 value={option.value}
-                                id={option.id.toString()}
+                                id={`${q.id.toString()}-${option.id.toString()}`}
                               />
-                              <Label htmlFor={option.id.toString()}>
+                              <Label
+                                htmlFor={`${q.id.toString()}-${option.id.toString()}`}
+                              >
                                 {option.value}
                               </Label>
                             </div>
@@ -463,8 +466,10 @@ export default function Home({ params }) {
                               key={index}
                               className="grid grid-cols-4 p-2 max-w-[350px] items-center content-stretch"
                             >
-                              <div className="flex gap-2 col-span-3">
-                                <Checkbox
+                              <div className="flex items-center gap-2 col-span-3">
+                                <input
+                                  className="accent-primary w-4 h-4"
+                                  type="checkbox"
                                   checked={sub.isChecked}
                                   onChange={(event) =>
                                     handleCheckboxChange(
@@ -473,8 +478,11 @@ export default function Home({ params }) {
                                       item.id
                                     )
                                   }
+                                  id={sub.name}
                                 />
-                                <label htmlFor={sub.name}>{sub.name}</label>
+                                <label htmlFor={`${sub.name}-${item.name}`}>
+                                  {sub.name}
+                                </label>
                               </div>
 
                               <Button
