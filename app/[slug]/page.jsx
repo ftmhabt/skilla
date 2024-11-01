@@ -468,7 +468,7 @@ export default function Home({ params }) {
                             >
                               <div className="flex items-center gap-2 col-span-3">
                                 <input
-                                  className="accent-primary w-4 h-4"
+                                  className="accent-primary min-w-4 min-h-4"
                                   type="checkbox"
                                   checked={sub.isChecked}
                                   onChange={(event) =>
