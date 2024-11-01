@@ -1,32 +1,32 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TiInputChecked } from "react-icons/ti";
 import { RiAiGenerate } from "react-icons/ri";
-import { useGlobalContext } from "@/context/context";
 import loadingSvg from "../img/loading.svg";
 import Image from "next/image";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/db/db";
 
 export default function Home({ params }) {
-  const { fields, setFields } = useGlobalContext();
-
   const [loading, setLoading] = useState(false);
-  const [field] = useState(params.slug);
+  const [fieldName] = useState(params.slug);
+  const newField = useLiveQuery(async () => {
+    return await db.fields.where("name").equals(fieldName).toArray();
+  });
 
-  const [newField] = useState(fields.find((f) => f.name === field));
+  const [currentField, setCurrentField] = useState(null);
 
-  const updateItemInArray = (id) => {
-    if (newField) {
-      const updatedArray = fields.map((item) =>
-        item.id === id ? newField : item
-      );
-      setFields(updatedArray);
+  useEffect(() => {
+    if (newField && newField.length > 0) {
+      setCurrentField(newField[0]);
     }
-  };
+  }, [newField]);
+
   const [questions, setQuestions] = useState(null);
 
   const [answers, setAnswers] = useState([]);
@@ -188,7 +188,33 @@ export default function Home({ params }) {
       },
     },
   };
+  function updateRoadmapInDb(updatedRoadmap) {
+    // Ensure the updated roadmap syncs with IndexedDB
+    if (currentField && currentField.id) {
+      db.fields
+        .update(currentField.id, { roadmap: updatedRoadmap })
+        .catch((err) => {
+          console.error("Failed to update IndexedDB:", err);
+        });
+    }
+  }
+  const handleCheckboxChange = (isChecked, subtopicName, topicId) => {
+    const updatedRoadmap = currentField.roadmap.map((topic) => {
+      if (topic.id === topicId) {
+        const updatedSubtopics = topic.subtopics.map((subtopic) => {
+          if (subtopic.name === subtopicName) {
+            return { ...subtopic, isChecked };
+          }
+          return subtopic;
+        });
+        return { ...topic, subtopics: updatedSubtopics };
+      }
+      return topic;
+    });
 
+    setCurrentField({ ...currentField, roadmap: updatedRoadmap });
+    updateRoadmapInDb(updatedRoadmap);
+  };
   async function generateQuestion(input) {
     setLoading(true);
     const chatSession = model.startChat({
@@ -221,16 +247,17 @@ export default function Home({ params }) {
       const json = JSON.parse(string);
       console.log("weaknesses generated", json.weaknesses);
       setWeaknesses(json.weaknesses);
-      if (field && weaknesses) await generateRoadmap({ field, weaknesses });
+      if (fieldName && weaknesses)
+        await generateRoadmap({ fieldName, weaknesses });
     } else {
       console.error("Invalid response format", result);
     }
     setLoading(false);
   }
 
-  async function generateRoadmap({ field, weaknesses }) {
+  async function generateRoadmap({ fieldName, weaknesses }) {
     setLoading(true);
-    const combo = JSON.stringify({ field, weaknesses });
+    const combo = JSON.stringify({ fieldName, weaknesses });
     const chatSession = roadmapModel.startChat({
       generationConfig: roadmapGenerationConfig,
       history: [],
@@ -251,12 +278,9 @@ export default function Home({ params }) {
             checklist: null,
           })) || null,
       }));
-      console.log("new roadmap", newRoadmap);
-      if (newField) {
-        newField.roadmap = newRoadmap;
-        updateItemInArray(newField.id);
-        console.log("newField.roadmap", newField.roadmap);
-      }
+      setCurrentField({ ...currentField, roadmap: newRoadmap });
+
+      updateRoadmapInDb(newRoadmap);
     } else {
       console.error("Invalid response format", result);
     }
@@ -290,8 +314,6 @@ export default function Home({ params }) {
             }) || null,
         };
       });
-
-      updateItemInArray(newField.id);
     }
     setLoading(false);
   }
@@ -303,185 +325,163 @@ export default function Home({ params }) {
   };
 
   return (
-    <div className="flex flex-col gap-3 min-h-96">
-      <h1>{newField?.name}</h1>
-      {!questions && newField?.roadmap.length === 0 && (
-        <>
-          <Button
-            onClick={() => generateQuestion(params.slug)}
-            disabled={loading}
-          >
-            {loading ? (
-              <Image src={loadingSvg} width={20} height={20} alt="loading" />
-            ) : (
-              "تولید سوالات"
-            )}
-          </Button>
-        </>
-      )}
-      {!submitted && newField?.roadmap.length === 0 ? (
-        <div className="flex flex-col gap-3">
-          {questions && (
-            <>
-              {questions.map(
-                (q, questionIndex) =>
-                  q.options && (
-                    <Fragment key={q.id}>
-                      <h2>{q.question}</h2>
-                      <RadioGroup
-                        className="flex flex-col gap-3"
-                        dir="rtl"
-                        value={answers[questionIndex]?.toString()}
-                        onValueChange={(value) =>
-                          handleAnswerChange(questionIndex, parseInt(value))
-                        }
-                      >
-                        {q.options.map((option, optionIndex) => (
-                          <div key={optionIndex} className="flex gap-3">
-                            <RadioGroupItem
-                              value={optionIndex.toString()}
-                              id={`${q.id}-${optionIndex}`}
-                            />
-                            <Label htmlFor={`${q.id}-${optionIndex}`}>
-                              {option}
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
-                    </Fragment>
-                  )
-              )}
-              <Button
-                onClick={() => {
-                  setSubmitted(true);
-                }}
-              >
-                ثبت جواب‌ها
-              </Button>
-            </>
-          )}
-        </div>
-      ) : (
-        <>
-          {newField?.roadmap.length === 0 ? (
+    currentField && (
+      <div className="flex flex-col gap-3 min-h-96">
+        <h1>{currentField.name}</h1>
+        {!questions && currentField.roadmap.length === 0 && (
+          <>
             <Button
+              onClick={() => generateQuestion(params.slug)}
               disabled={loading}
-              onClick={() => {
-                const questionArray = questions.map((q) => q.question);
-                findWeakness({ questionArray, answers });
-              }}
             >
               {loading ? (
                 <Image src={loadingSvg} width={20} height={20} alt="loading" />
               ) : (
-                "تولید نقشه راه"
+                "تولید سوالات"
               )}
             </Button>
-          ) : (
-            newField?.roadmap.map(
-              (item) =>
-                item.subtopics && (
-                  <div key={item.id}>
-                    <h1 className="mb-4">{item.topic}</h1>
-                    <ul>
-                      {item.subtopics &&
-                        item.subtopics.map((sub, index) => (
-                          <li
-                            key={index}
-                            className="grid grid-cols-4 p-2 max-w-[350px] items-center content-stretch"
-                          >
-                            <div className="flex gap-2 col-span-3">
-                              <Checkbox
-                                id={sub.name}
-                                value={sub.name}
-                                checked={sub.isChecked}
-                                onChange={(e) => {
-                                  const isChecked = e.target.checked;
-
-                                  if (newField) {
-                                    const updatedRoadmap = newField.roadmap.map(
-                                      (roadmapItem) => {
-                                        if (roadmapItem.id === item.id) {
-                                          return {
-                                            ...roadmapItem,
-                                            subtopics:
-                                              roadmapItem.subtopics?.map(
-                                                (subtopicItem) => {
-                                                  if (
-                                                    subtopicItem.name ===
-                                                    sub.name
-                                                  ) {
-                                                    return {
-                                                      ...subtopicItem,
-                                                      isChecked,
-                                                    };
-                                                  }
-                                                  return subtopicItem;
-                                                }
-                                              ) || null,
-                                          };
-                                        }
-                                        return roadmapItem;
-                                      }
-                                    );
-
-                                    newField.roadmap = updatedRoadmap;
-                                    updateItemInArray(newField.id);
-                                  }
-                                }}
-                                className="appearance-none w-[20px] h-[20px]"
+          </>
+        )}
+        {!submitted && currentField.roadmap.length === 0 ? (
+          <div className="flex flex-col gap-3">
+            {questions && (
+              <>
+                {questions.map(
+                  (q, questionIndex) =>
+                    q.options && (
+                      <Fragment key={q.id}>
+                        <h2>{q.question}</h2>
+                        <RadioGroup
+                          className="flex flex-col gap-3"
+                          dir="rtl"
+                          value={answers[questionIndex]?.toString()}
+                          onValueChange={(value) =>
+                            handleAnswerChange(questionIndex, parseInt(value))
+                          }
+                        >
+                          {q.options.map((option, optionIndex) => (
+                            <div key={optionIndex} className="flex gap-3">
+                              <RadioGroupItem
+                                value={optionIndex.toString()}
+                                id={`${q.id}-${optionIndex}`}
                               />
-                              <label htmlFor={sub.name}>{sub.name}</label>
+                              <Label htmlFor={`${q.id}-${optionIndex}`}>
+                                {option}
+                              </Label>
                             </div>
-
-                            <Button
-                              className="w-[25px] h-[25px] p-px justify-self-end"
-                              variant="outline"
-                              disabled={loading}
-                              value={sub.name}
-                              onClick={() => {
-                                getChecklist(sub.name, item.topic);
-                              }}
+                          ))}
+                        </RadioGroup>
+                      </Fragment>
+                    )
+                )}
+                <Button
+                  onClick={() => {
+                    setSubmitted(true);
+                  }}
+                >
+                  ثبت جواب‌ها
+                </Button>
+              </>
+            )}
+          </div>
+        ) : (
+          <>
+            {currentField.roadmap.length === 0 ? (
+              <Button
+                disabled={loading}
+                onClick={() => {
+                  const questionArray = questions.map((q) => q.question);
+                  findWeakness({ questionArray, answers });
+                }}
+              >
+                {loading ? (
+                  <Image
+                    src={loadingSvg}
+                    width={20}
+                    height={20}
+                    alt="loading"
+                  />
+                ) : (
+                  "تولید نقشه راه"
+                )}
+              </Button>
+            ) : (
+              currentField?.roadmap.map(
+                (item) =>
+                  item.subtopics && (
+                    <div key={item.id}>
+                      <h1 className="mb-4">{item.topic}</h1>
+                      <ul>
+                        {item.subtopics &&
+                          item.subtopics.map((sub, index) => (
+                            <li
+                              key={index}
+                              className="grid grid-cols-4 p-2 max-w-[350px] items-center content-stretch"
                             >
-                              <RiAiGenerate color="#453875" />
-                            </Button>
-                            {sub.checklist && sub.checklist.length > 0 && (
-                              <ul className="col-span-4 flex flex-col gap-4 p-4 items-center">
-                                {sub.checklist.map((i) => (
-                                  <li
-                                    key={i.name}
-                                    className="flex gap-5 relative w-[300px] h-[60px]"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      id={i.name}
-                                      value={i.name}
-                                      checked={i.isChecked}
-                                      className="peer appearance-none w-[300px] h-[60px] bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
-                                    />
-                                    <label
-                                      className="absolute w-[300px] pr-2 pl-5 self-center leading-tight"
-                                      htmlFor={i.name}
+                              <div className="flex gap-2 col-span-3">
+                                <input
+                                  type="checkbox"
+                                  checked={sub.isChecked}
+                                  onChange={(event) =>
+                                    handleCheckboxChange(
+                                      event.target.checked,
+                                      sub.name,
+                                      item.id
+                                    )
+                                  }
+                                />
+                                <label htmlFor={sub.name}>{sub.name}</label>
+                              </div>
+
+                              <Button
+                                className="w-[25px] h-[25px] p-px justify-self-end"
+                                variant="outline"
+                                disabled={loading}
+                                value={sub.name}
+                                onClick={() => {
+                                  getChecklist(sub.name, item.topic);
+                                }}
+                              >
+                                <RiAiGenerate color="#453875" />
+                              </Button>
+                              {sub.checklist && sub.checklist.length > 0 && (
+                                <ul className="col-span-4 flex flex-col gap-4 p-4 items-center">
+                                  {sub.checklist.map((i) => (
+                                    <li
+                                      key={i.name}
+                                      className="flex gap-5 relative w-[300px] h-[60px]"
                                     >
-                                      {i.name}
-                                    </label>
-                                    <TiInputChecked
-                                      color="#453875"
-                                      className="absolute left-2 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
-                                    />
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                )
-            )
-          )}
-        </>
-      )}
-    </div>
+                                      <input
+                                        type="checkbox"
+                                        id={i.name}
+                                        value={i.name}
+                                        checked={i.isChecked}
+                                        className="peer appearance-none w-[300px] h-[60px] bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
+                                      />
+                                      <label
+                                        className="absolute w-[300px] pr-2 pl-5 self-center leading-tight"
+                                        htmlFor={i.name}
+                                      >
+                                        {i.name}
+                                      </label>
+                                      <TiInputChecked
+                                        color="#453875"
+                                        className="absolute left-2 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
+                                      />
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )
+              )
+            )}
+          </>
+        )}
+      </div>
+    )
   );
 }

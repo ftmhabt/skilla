@@ -4,24 +4,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useGlobalContext } from "@/context/context";
-
+// import { useGlobalContext } from "@/context/context";
+import { db } from "@/db/db";
+import { useLiveQuery } from "dexie-react-hooks";
 export default function Skills() {
   const [skillInput, setSkillInput] = useState("");
-  const { fields, setFields } = useGlobalContext();
+  // const { fields, setFields } = useGlobalContext();
 
-  const handleAddSkill = () => {
-    if (skillInput.trim()) {
-      const newSkill = {
-        id: fields.length + 1,
+  // const handleAddSkill = () => {
+  //   if (skillInput.trim()) {
+  //     const newSkill = {
+  //       id: fields.length + 1,
+  //       name: skillInput,
+  //       roadmap: [],
+  //     };
+  //     setFields([...fields, newSkill]);
+  //     console.log(fields);
+  //     setSkillInput("");
+  //   }
+  // };
+  const fields = useLiveQuery(() => db.fields.toArray());
+  async function handleAddSkill() {
+    try {
+      // Add the new friend!
+      await db.fields.add({
         name: skillInput,
         roadmap: [],
-      };
-      setFields([...fields, newSkill]);
-
+      });
       setSkillInput("");
+    } catch (error) {
+      console.log(`Failed to add ${skillInput}: ${error}`);
     }
-  };
+  }
   return (
     <>
       <div className="flex gap-2">
@@ -36,16 +50,15 @@ export default function Skills() {
         </Button>
       </div>
       <div className="flex gap-4">
-        {fields.length > 0 &&
-          fields.map((skill) => (
-            <Link
-              href={`/${skill.name}`}
-              key={skill.id}
-              className="bg-secondary w-[100px] h-[100px] rounded-full flex justify-center items-center"
-            >
-              <h1>{skill.name}</h1>
-            </Link>
-          ))}
+        {fields?.map((skill) => (
+          <Link
+            href={`/${skill.name}`}
+            key={skill.id}
+            className="bg-secondary w-[100px] h-[100px] rounded-full flex justify-center items-center"
+          >
+            <h1>{skill.name}</h1>
+          </Link>
+        ))}
       </div>
     </>
   );

@@ -4,7 +4,8 @@ import {
   ReactNode,
   useState,
   useContext,
-  useEffect,
+  Dispatch,
+  SetStateAction,
 } from "react";
 
 export interface Field {
@@ -32,25 +33,13 @@ export interface Field {
 
 interface GlobalContextType {
   fields: Field[];
-  setFields: (input: Field[]) => void;
+  setFields: Dispatch<SetStateAction<Field[]>>;
 }
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
 
 export const GlobalProvider = ({ children }: { children: ReactNode }) => {
-  const [fields, setFields] = useState<Field[]>(() => {
-    if (typeof window !== "undefined") {
-      const savedFields = localStorage.getItem("fields");
-      return savedFields ? JSON.parse(savedFields) : [];
-    }
-    return [];
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("fields", JSON.stringify(fields));
-    }
-  }, [fields]);
+  const [fields, setFields] = useState<Field[]>([]);
 
   return (
     <GlobalContext.Provider value={{ fields, setFields }}>
