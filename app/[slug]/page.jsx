@@ -215,6 +215,34 @@ export default function Home({ params }) {
     setCurrentField({ ...currentField, roadmap: updatedRoadmap });
     updateRoadmapInDb(updatedRoadmap);
   };
+  const handleChecklistItemChange = (
+    isChecked,
+    checklistItemName,
+    subtopicName,
+    topicId
+  ) => {
+    const updatedRoadmap = currentField.roadmap.map((topic) => {
+      if (topic.id === topicId) {
+        const updatedSubtopics = topic.subtopics.map((subtopic) => {
+          if (subtopic.name === subtopicName) {
+            const updatedChecklist = subtopic.checklist.map((item) => {
+              if (item.name === checklistItemName) {
+                return { ...item, isChecked }; // Update checklist item's isChecked state
+              }
+              return item;
+            });
+            return { ...subtopic, checklist: updatedChecklist };
+          }
+          return subtopic;
+        });
+        return { ...topic, subtopics: updatedSubtopics };
+      }
+      return topic;
+    });
+
+    setCurrentField({ ...currentField, roadmap: updatedRoadmap });
+    updateRoadmapInDb(updatedRoadmap);
+  };
   async function generateQuestion(input) {
     setLoading(true);
     const chatSession = model.startChat({
@@ -298,11 +326,10 @@ export default function Home({ params }) {
 
     const result = await chatSession.sendMessage(str);
     const json = JSON.parse(result.response.text());
-    console.log("checklist generated", json);
-    const checklistArray = json.checklist;
-
-    if (newField) {
-      newField.roadmap = newField.roadmap.map((topic) => {
+    if (json) {
+      console.log("checklist generated", json);
+      const checklistArray = json.checklist;
+      const newRoadmap = currentField.roadmap.map((topic) => {
         return {
           ...topic,
           subtopics:
@@ -314,7 +341,11 @@ export default function Home({ params }) {
             }) || null,
         };
       });
+      setCurrentField({ ...currentField, roadmap: newRoadmap });
+
+      updateRoadmapInDb(newRoadmap);
     }
+
     setLoading(false);
   }
 
@@ -419,8 +450,7 @@ export default function Home({ params }) {
                               className="grid grid-cols-4 p-2 max-w-[350px] items-center content-stretch"
                             >
                               <div className="flex gap-2 col-span-3">
-                                <input
-                                  type="checkbox"
+                                <Checkbox
                                   checked={sub.isChecked}
                                   onChange={(event) =>
                                     handleCheckboxChange(
@@ -456,6 +486,14 @@ export default function Home({ params }) {
                                         id={i.name}
                                         value={i.name}
                                         checked={i.isChecked}
+                                        onChange={(event) =>
+                                          handleChecklistItemChange(
+                                            event.target.checked,
+                                            i.name,
+                                            sub.name,
+                                            item.id
+                                          )
+                                        }
                                         className="peer appearance-none w-[300px] h-[60px] bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
                                       />
                                       <label
