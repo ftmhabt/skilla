@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ModeToggle } from "../../components/mode-toggle";
+{/* import { ModeToggle } from "../../components/mode-toggle";*/}
 import Image from "next/image";
 import Logo from "../img/logo.png";
 
