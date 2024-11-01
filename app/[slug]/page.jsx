@@ -1,35 +1,25 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Fragment, useEffect, useState } from "react";
-import axios from "axios";
+import { Fragment, useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import handleError from "@/lib/handleError";
-import {
-  skillSession,
-  skill2Session,
-  roadmapSession,
-  checklistSession,
-  headers,
-} from "@/lib/sessions";
-import { extractJson } from "@axync/extract-json";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TiInputChecked } from "react-icons/ti";
 import { RiAiGenerate } from "react-icons/ri";
 import { useGlobalContext } from "@/context/context";
 import loadingSvg from "../img/loading.svg";
 import Image from "next/image";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export default function Home({ params }: { params: { slug: string } }) {
+export default function Home({ params }) {
   const { fields, setFields } = useGlobalContext();
 
-  const [loading, setLoading] = useState(true);
-  const [questionGenerationError, setQuestionGenerationError] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [field] = useState(params.slug);
 
-  const newField = fields.find((f) => f.name === field);
+  const [newField] = useState(fields.find((f) => f.name === field));
 
-  const updateItemInArray = (id: number) => {
+  const updateItemInArray = (id) => {
     if (newField) {
       const updatedArray = fields.map((item) =>
         item.id === id ? newField : item
@@ -37,211 +27,276 @@ export default function Home({ params }: { params: { slug: string } }) {
       setFields(updatedArray);
     }
   };
-  const [questions, setQuestions] = useState<
-    | {
-        id: number;
-        question: string;
-        options: string[];
-      }[]
-    | null
-  >(null);
+  const [questions, setQuestions] = useState(null);
 
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [weaknesses, setWeaknesses] = useState<string[]>([]);
+  const [answers, setAnswers] = useState([]);
+  const [weaknesses, setWeaknesses] = useState([]);
   const [submitted, setSubmitted] = useState(false);
 
-  const [skillSessionId, setSkillSessionId] = useState<number | null>(null);
-  const [skill2SessionId, setSkill2SessionId] = useState<number | null>(null);
-  const [roadmapSessionId, setRoadmapSessionId] = useState<number | null>(null);
-  const [checklistSessionId, setChecklistSessionId] = useState<number | null>(
-    null
-  );
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  if (!apiKey) throw new Error();
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction:
+      "یه زمینه برنامه نویسی دریافت کن و بر اساس اون یه پرسشنامه چهار گزینه ای براس سنجش دانش کاربر به فارسی بساز. اطمینان حاصل کن که سوالاتی که از کاربر پرسیده می‌شود، به اندازه کافی متنوع و گسترده باشند. می‌توانی سوالات را در زمینه‌های مختلف مانند مفاهیم پایه، الگوریتم‌ها، ساختار داده‌ها، ابزارهای خاص، فریم‌ورک‌ها، و تجربه عملی طراحی کنی. دقیقا 10 سوال بپرس ",
+  });
+  const weaknessModel = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction:
+      "براساس آبجکت شامل آرایه سوالات و آرایه جواب های متناظری که دریافت میکنی هر مبحثی که توش نقطه ضعف میبینی (هر مبحث به صورت یک یا دو کلمه) توی یه آرایه لیست کن و بده",
+  });
 
-  useEffect(() => {
-    initializeSessions();
-  }, []);
+  const roadmapModel = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction:
+      " weakness و field رو دریافت کن و یه چک لیست از چیزایی که باید یاد بگیرم درست کن کن و به صورت آرایه json بفرست \nsubtopic یعنی اون topic ها رو به موضوعات کوچکتر تقسیم کن",
+  });
 
-  const initializeSessions = async () => {
+  const checklistModel = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction:
+      "یه موضوع و یه زمینه دریافت میکنی. اون موضوع رو در اون زمینه به صورت چک لیست برای یادگیری ارائه بده. چک لیست فارسی باشه ",
+  });
+
+  const checklistGenerationConfig = {
+    temperature: 1,
+    topP: 0.95,
+    topK: 64,
+    maxOutputTokens: 8192,
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: "object",
+      properties: {
+        checklist: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: {
+                type: "string",
+              },
+              isChecked: {
+                type: "boolean",
+              },
+              id: {
+                type: "number",
+              },
+            },
+            required: ["name", "isChecked", "id"],
+          },
+        },
+      },
+      required: ["checklist"],
+    },
+  };
+
+  const roadmapGenerationConfig = {
+    temperature: 1,
+    topP: 0.95,
+    topK: 64,
+    maxOutputTokens: 8192,
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: "object",
+      properties: {
+        roadmap: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: {
+                type: "number",
+              },
+              topic: {
+                type: "string",
+              },
+              subtopics: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: {
+                      type: "string",
+                    },
+                    isChecked: {
+                      type: "boolean",
+                    },
+                  },
+                  required: ["name", "isChecked"],
+                },
+              },
+            },
+            required: ["id", "topic", "subtopics"],
+          },
+        },
+      },
+      required: ["roadmap"],
+    },
+  };
+
+  const questionGenerationConfig = {
+    temperature: 1,
+    topP: 0.95,
+    topK: 64,
+    maxOutputTokens: 8192,
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: "object",
+      properties: {
+        questions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: {
+                type: "number",
+              },
+              question: {
+                type: "string",
+              },
+              options: {
+                type: "array",
+                items: {
+                  type: "string",
+                },
+              },
+            },
+            required: ["id", "question", "options"],
+          },
+        },
+      },
+      required: ["questions"],
+    },
+  };
+
+  const weaknessGenerationConfig = {
+    temperature: 1,
+    topP: 0.95,
+    topK: 64,
+    maxOutputTokens: 8192,
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: "object",
+      properties: {
+        weaknesses: {
+          type: "array",
+          items: {
+            type: "string",
+          },
+        },
+      },
+    },
+  };
+
+  async function generateQuestion(input) {
     setLoading(true);
-    const skillId = await skillSession();
-    setSkillSessionId(skillId);
-    const skill2Id = await skill2Session();
-    setSkill2SessionId(skill2Id);
-    const roadmapId = await roadmapSession();
-    setRoadmapSessionId(roadmapId);
-    const checklistId = await checklistSession();
-    setChecklistSessionId(checklistId);
+    const chatSession = model.startChat({
+      generationConfig: questionGenerationConfig,
+      history: [],
+    });
+
+    const result = await chatSession.sendMessage(input);
+    const json = JSON.parse(result.response.text());
+    if (json.questions) {
+      setQuestions(json.questions);
+      if (questions) setAnswers(Array(questions.length).fill(null));
+      console.log("questions generated", json.questions);
+    } else {
+      console.error("Invalid response format", result);
+    }
     setLoading(false);
-  };
+  }
 
-  const fetchQuestions = async () => {
-    setSubmitted(false);
-    setQuestionGenerationError(false);
+  async function findWeakness(object) {
     setLoading(true);
-    try {
-      const messageResponse = await axios.post(
-        `https://api.metisai.ir/api/v1/chat/session/${skillSessionId}/message`,
-        {
-          message: {
-            content: field,
-            type: "USER",
-          },
-        },
-        { headers }
-      );
-      const str = messageResponse.data.content;
+    const chatSession = weaknessModel.startChat({
+      generationConfig: weaknessGenerationConfig,
+      history: [],
+    });
 
-      const array = await extractJson(str);
-      console.log(array);
-
-      if (array) {
-        setQuestions(array);
-        setAnswers(Array(array.length).fill(null));
-      }
-      setQuestionGenerationError(false);
-      console.log("Message sent:", messageResponse.data);
-    } catch (error) {
-      setQuestionGenerationError(true);
-      handleError(error);
-    } finally {
-      setLoading(false);
+    const result = await chatSession.sendMessage(JSON.stringify(object));
+    if (result.response) {
+      const string = result.response.text();
+      const json = JSON.parse(string);
+      console.log("weaknesses generated", json.weaknesses);
+      setWeaknesses(json.weaknesses);
+      if (field && weaknesses) await generateRoadmap({ field, weaknesses });
+    } else {
+      console.error("Invalid response format", result);
     }
-  };
+    setLoading(false);
+  }
 
-  const getWeakness = async () => {
+  async function generateRoadmap({ field, weaknesses }) {
     setLoading(true);
-    try {
-      const comb = JSON.stringify({ questions, answers });
-      const messageResponse = await axios.post(
-        `https://api.metisai.ir/api/v1/chat/session/${skill2SessionId}/message`,
-        {
-          message: {
-            content: comb,
-            type: "USER",
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    const combo = JSON.stringify({ field, weaknesses });
+    const chatSession = roadmapModel.startChat({
+      generationConfig: roadmapGenerationConfig,
+      history: [],
+    });
 
-      const array = JSON.parse(messageResponse.data.content);
-      console.log(array);
-      setWeaknesses(array);
-      await getRoadmap();
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getRoadmap = async () => {
-    try {
-      const comb = JSON.stringify({ field, weaknesses });
-      const messageResponse = await axios.post(
-        `https://api.metisai.ir/api/v1/chat/session/${roadmapSessionId}/message`,
-        {
-          message: {
-            content: comb,
-            type: "USER",
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const str = messageResponse.data.content;
-
-      const array = await extractJson(str);
-
+    const result = await chatSession.sendMessage(combo);
+    const json = JSON.parse(result.response.text());
+    console.log("roadmap generated", json.roadmap);
+    if (json) {
+      const array = json.roadmap;
       const newRoadmap = array.map((item) => ({
         id: item.id,
         topic: item.topic,
         subtopics:
-          item.subtopics?.map((sub: string) => ({
-            name: sub,
+          item.subtopics?.map((sub) => ({
+            name: sub.name,
             isChecked: false,
             checklist: null,
           })) || null,
       }));
-
+      console.log("new roadmap", newRoadmap);
       if (newField) {
         newField.roadmap = newRoadmap;
         updateItemInArray(newField.id);
+        console.log("newField.roadmap", newField.roadmap);
       }
-
-      console.log("Message sent:", messageResponse.data);
-      setLoading(false);
-    } catch (error) {
-      handleError(error);
+    } else {
+      console.error("Invalid response format", result);
     }
-  };
+    setLoading(false);
+  }
 
-  const getChecklist = async (subtopic: string, topic: string) => {
+  async function getChecklist(subtopic, topic) {
     setLoading(true);
     const str = subtopic + " در زمینه " + topic;
-    try {
-      const messageResponse = await axios.post(
-        `https://api.metisai.ir/api/v1/chat/session/${checklistSessionId}/message`,
-        {
-          message: {
-            content: str,
-            type: "USER",
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log(messageResponse.data.content);
-      const jsonString = messageResponse.data.content;
 
-      const array = JSON.parse(jsonString);
+    const chatSession = checklistModel.startChat({
+      generationConfig: checklistGenerationConfig,
+      history: [],
+    });
 
-      const checklistArray = array.map((item: string) => ({
-        name: item,
-        isChecked: false,
-      }));
+    const result = await chatSession.sendMessage(str);
+    const json = JSON.parse(result.response.text());
+    console.log("checklist generated", json);
+    const checklistArray = json.checklist;
 
-      if (newField) {
-        newField.roadmap = newField.roadmap.map((topic) => {
-          return {
-            ...topic,
-            subtopics:
-              topic.subtopics?.map((item) => {
-                if (item.name === subtopic) {
-                  return { ...item, checklist: checklistArray };
-                }
-                return item;
-              }) || null,
-          };
-        });
+    if (newField) {
+      newField.roadmap = newField.roadmap.map((topic) => {
+        return {
+          ...topic,
+          subtopics:
+            topic.subtopics?.map((item) => {
+              if (item.name === subtopic) {
+                return { ...item, checklist: checklistArray };
+              }
+              return item;
+            }) || null,
+        };
+      });
 
-        updateItemInArray(newField.id);
-      }
-
-      console.log(newField);
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setLoading(false);
+      updateItemInArray(newField.id);
     }
-  };
+    setLoading(false);
+  }
 
-  const handleAnswerChange = (
-    questionIndex: number,
-    selectedOptionIndex: number
-  ) => {
+  const handleAnswerChange = (questionIndex, selectedOptionIndex) => {
     const updatedAnswers = [...answers];
     updatedAnswers[questionIndex] = selectedOptionIndex;
     setAnswers(updatedAnswers);
@@ -249,19 +304,22 @@ export default function Home({ params }: { params: { slug: string } }) {
 
   return (
     <div className="flex flex-col gap-3 min-h-96">
-      {newField?.roadmap.length === 0 && !questions && (
+      <h1>{newField?.name}</h1>
+      {!questions && newField?.roadmap.length === 0 && (
         <>
-          <Button onClick={fetchQuestions} disabled={loading}>
+          <Button
+            onClick={() => generateQuestion(params.slug)}
+            disabled={loading}
+          >
             {loading ? (
               <Image src={loadingSvg} width={20} height={20} alt="loading" />
             ) : (
               "تولید سوالات"
             )}
           </Button>
-          {questionGenerationError && "نشد :( یه بار دیگه امتحان کن"}
         </>
       )}
-      {newField?.roadmap.length === 0 && !submitted ? (
+      {!submitted && newField?.roadmap.length === 0 ? (
         <div className="flex flex-col gap-3">
           {questions && (
             <>
@@ -305,11 +363,12 @@ export default function Home({ params }: { params: { slug: string } }) {
         </div>
       ) : (
         <>
-          {newField?.roadmap && newField.roadmap.length === 0 ? (
+          {newField?.roadmap.length === 0 ? (
             <Button
               disabled={loading}
               onClick={() => {
-                getWeakness();
+                const questionArray = questions.map((q) => q.question);
+                findWeakness({ questionArray, answers });
               }}
             >
               {loading ? (
@@ -337,8 +396,7 @@ export default function Home({ params }: { params: { slug: string } }) {
                                 value={sub.name}
                                 checked={sub.isChecked}
                                 onChange={(e) => {
-                                  const target = e.target as HTMLInputElement;
-                                  const isChecked = target.checked;
+                                  const isChecked = e.target.checked;
 
                                   if (newField) {
                                     const updatedRoadmap = newField.roadmap.map(

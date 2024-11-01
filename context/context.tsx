@@ -10,22 +10,24 @@ import {
 export interface Field {
   id: number;
   name: string;
-  roadmap: {
-    id: number;
-    topic: string;
-    subtopics:
-      | {
-          name: string;
-          isChecked: boolean;
-          checklist:
-            | {
-                name: string;
-                isChecked: boolean;
-              }[]
-            | null;
-        }[]
-      | null;
-  }[];
+  roadmap:
+    | {
+        id: number;
+        topic: string;
+        subtopics:
+          | {
+              name: string;
+              isChecked: boolean;
+              checklist:
+                | {
+                    name: string;
+                    isChecked: boolean;
+                  }[]
+                | null;
+            }[]
+          | null;
+      }[]
+    | null;
 }
 
 interface GlobalContextType {
@@ -36,16 +38,13 @@ interface GlobalContextType {
 const GlobalContext = createContext<GlobalContextType | null>(null);
 
 export const GlobalProvider = ({ children }: { children: ReactNode }) => {
-  const [fields, setFields] = useState<Field[]>([]);
-
-  useEffect(() => {
+  const [fields, setFields] = useState<Field[]>(() => {
     if (typeof window !== "undefined") {
       const savedFields = localStorage.getItem("fields");
-      if (savedFields) {
-        setFields(JSON.parse(savedFields));
-      }
+      return savedFields ? JSON.parse(savedFields) : [];
     }
-  }, []);
+    return [];
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
