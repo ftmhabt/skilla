@@ -41,9 +41,9 @@ export default async function RootLayout({
             <div className="flex flex-col w-screen min-h-screen">
               <Navbar />
               <main className="p-4">{children}</main>
-              <footer className="bg-secondary mt-auto text-sm text-center p-1 text-primary">
+              <footer className="bg-secondary mt-auto text-sm text-center p-1 text-white">
                 by{" "}
-                <a href="https://github.com/ftmhabt" className="underline">
+                <a href="https://github.com/ftmhabt" className="text-primary">
                   ftmhabt
                 </a>
               </footer>
