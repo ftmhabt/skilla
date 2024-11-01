@@ -49,12 +49,12 @@ export default function Skills() {
           <Plus />
         </Button>
       </div>
-      <div className="flex gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {fields?.map((skill) => (
           <Link
             href={`/${skill.name}`}
             key={skill.id}
-            className="bg-secondary w-[100px] h-[100px] rounded-full flex justify-center items-center"
+            className="bg-secondary w-[100px] h-[100px] rounded-full flex justify-center text-center items-center"
           >
             <h1>{skill.name}</h1>
           </Link>

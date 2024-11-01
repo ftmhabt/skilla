@@ -358,7 +358,9 @@ export default function Home({ params }) {
   return (
     currentField && (
       <div className="flex flex-col gap-3 min-h-96">
-        <h1>{currentField.name}</h1>
+        <h1 className="text-2xl text-primary text-center bg-secondary rounded-md">
+          {currentField.name}
+        </h1>
         {!questions && currentField.roadmap.length === 0 && (
           <>
             <Button
@@ -440,7 +442,10 @@ export default function Home({ params }) {
               currentField?.roadmap.map(
                 (item) =>
                   item.subtopics && (
-                    <div key={item.id}>
+                    <div
+                      key={item.id}
+                      className="flex flex-col justify-center items-center *:w-[300px]"
+                    >
                       <h1 className="mb-4">{item.topic}</h1>
                       <ul>
                         {item.subtopics &&
