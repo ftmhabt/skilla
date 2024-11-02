@@ -10,6 +10,7 @@ import Image from "next/image";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db/db";
+import { Check } from "lucide-react";
 
 export default function Home({ params }) {
   const [loading, setLoading] = useState(false);
@@ -50,7 +51,7 @@ export default function Home({ params }) {
   const roadmapModel = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
     systemInstruction:
-      " weakness و field رو دریافت کن و یه چک لیست از چیزایی که باید یاد بگیرم درست کن کن و به صورت آرایه json بفرست \nsubtopic یعنی اون topic ها رو به موضوعات کوچکتر تقسیم کن",
+      "در زمینه field من این weaknesses رو دارم با تمرکز بر تقویت این نواقص یه نقشه راه بهم بده\nsubtopic هم یعنی اون topic ها رو به موضوعات کوچکتر تقسیم کن",
   });
 
   const checklistModel = genAI.getGenerativeModel({
@@ -295,7 +296,7 @@ export default function Home({ params }) {
 
   async function generateRoadmap({ fieldName, weaknesses }) {
     setLoading(true);
-    const combo = JSON.stringify({ fieldName, weaknesses });
+    const combo = JSON.stringify({ field: fieldName, weaknesses });
     const chatSession = roadmapModel.startChat({
       generationConfig: roadmapGenerationConfig,
       history: [],
@@ -359,9 +360,9 @@ export default function Home({ params }) {
     setLoading(false);
   }
 
-  const handleAnswerChange = (questionIndex, selectedOptionIndex) => {
+  const handleAnswerChange = (questionIndex, selectedOptionValue) => {
     const updatedAnswers = [...answers];
-    updatedAnswers[questionIndex] = selectedOptionIndex;
+    updatedAnswers[questionIndex] = selectedOptionValue;
     setAnswers(updatedAnswers);
   };
 
@@ -390,17 +391,18 @@ export default function Home({ params }) {
             {questions && (
               <>
                 {questions.map(
-                  (q) =>
+                  (q, index) =>
                     q.options && (
                       <Fragment key={q.id}>
                         <h2>{q.question}</h2>
                         <RadioGroup
                           className="flex flex-col gap-3"
                           dir="rtl"
-                          value={answers[q.id]?.toString()}
-                          onValueChange={(value) =>
-                            handleAnswerChange(q.id, value)
-                          }
+                          value={answers[index]?.toString()}
+                          onValueChange={(value) => {
+                            handleAnswerChange(index, value);
+                            console.log(answers);
+                          }}
                         >
                           {q.options.map((option) => (
                             <div key={option.id} className="flex gap-3">
@@ -436,7 +438,7 @@ export default function Home({ params }) {
                 disabled={loading}
                 onClick={() => {
                   const questionArray = questions.map((q) => q.question);
-                  findWeakness({ questionArray, answers });
+                  findWeakness({ questions: questionArray, answers });
                 }}
               >
                 {loading ? (
@@ -456,7 +458,7 @@ export default function Home({ params }) {
                   item.subtopics && (
                     <div
                       key={item.id}
-                      className="flex flex-col justify-center items-center *:w-[300px]"
+                      className="flex flex-col justify-center items-center *:w-full"
                     >
                       <h1 className="mb-4">{item.topic}</h1>
                       <ul>
@@ -464,11 +466,12 @@ export default function Home({ params }) {
                           item.subtopics.map((sub, index) => (
                             <li
                               key={index}
-                              className="grid grid-cols-4 p-2 max-w-[350px] items-center content-stretch"
+                              className="grid grid-cols-4 p-2 w-full items-center content-stretch"
                             >
-                              <div className="flex items-center gap-2 col-span-3">
+                              <div className="flex relative items-center gap-2 col-span-3">
                                 <input
-                                  className="accent-primary min-w-4 min-h-4"
+                                  className="min-w-4 min-h-4
+                                  peer cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border border-slate-300 checked:bg-white checked:border-slate-800"
                                   type="checkbox"
                                   checked={sub.isChecked}
                                   onChange={(event) =>
@@ -478,8 +481,13 @@ export default function Home({ params }) {
                                       item.id
                                     )
                                   }
-                                  id={sub.name}
+                                  id={`${sub.name}-${item.name}`}
                                 />
+                                <Check
+                                  size={25}
+                                  class="absolute text-primary opacity-0 peer-checked:opacity-100 -right-2"
+                                />
+
                                 <label htmlFor={`${sub.name}-${item.name}`}>
                                   {sub.name}
                                 </label>
@@ -497,11 +505,11 @@ export default function Home({ params }) {
                                 <RiAiGenerate color="#453875" />
                               </Button>
                               {sub.checklist && sub.checklist.length > 0 && (
-                                <ul className="col-span-4 flex flex-col gap-4 p-4 items-center">
+                                <ul className="col-span-4 flex flex-col gap-4 py-4 items-center">
                                   {sub.checklist.map((i) => (
                                     <li
                                       key={i.name}
-                                      className="flex gap-5 relative w-[300px] h-[60px]"
+                                      className="flex gap-5 relative w-full h-[80px]"
                                     >
                                       <input
                                         type="checkbox"
@@ -516,17 +524,17 @@ export default function Home({ params }) {
                                             item.id
                                           )
                                         }
-                                        className="peer appearance-none w-[300px] h-[60px] bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
+                                        className="peer appearance-none w-full h-full bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
                                       />
                                       <label
-                                        className="absolute w-[300px] pr-2 pl-5 self-center leading-tight"
+                                        className="absolute w-full pr-4 pl-10 self-center leading-tight"
                                         htmlFor={i.name}
                                       >
                                         {i.name}
                                       </label>
                                       <TiInputChecked
                                         color="#453875"
-                                        className="absolute left-2 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
+                                        className="absolute left-4 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
                                       />
                                     </li>
                                   ))}
