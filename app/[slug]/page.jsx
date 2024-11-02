@@ -28,6 +28,7 @@ export default function Home({ params }) {
   useEffect(() => {
     toast.info("!روشن کنی vpn یادت نره", {
       position: "top-right",
+      width: 300,
       autoClose: 5000,
       hideProgressBar: false,
       closeOnClick: true,
@@ -574,7 +575,7 @@ export default function Home({ params }) {
           )}
         </div>
       )}
-      <ToastContainer />
+      <ToastContainer style={{ marginRight: "-20px" }} />
     </div>
   );
 }
