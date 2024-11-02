@@ -11,6 +11,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db/db";
 import { Check } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/ReactToastify.css";
+import "../globals.css";
 
 export default function Home({ params }) {
   const [loading, setLoading] = useState(false);
@@ -22,6 +25,19 @@ export default function Home({ params }) {
 
   const [currentField, setCurrentField] = useState(null);
 
+  useEffect(() => {
+    toast.info("!روشن کنی vpn یادت نره", {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+    });
+    console.log("toasted");
+  }, []);
   useEffect(() => {
     if (newField && newField.length > 0) {
       setCurrentField(newField[0]);
@@ -367,79 +383,18 @@ export default function Home({ params }) {
   };
 
   return (
-    currentField && (
-      <div className="flex flex-col gap-3 min-h-96">
-        <h1 className="text-2xl text-primary text-center bg-secondary rounded-md">
-          {currentField.name}
-        </h1>
-        {!questions && currentField.roadmap.length === 0 && (
-          <>
-            <Button
-              onClick={() => generateQuestion(params.slug)}
-              disabled={loading}
-            >
-              {loading ? (
-                <Image src={loadingSvg} width={20} height={20} alt="loading" />
-              ) : (
-                "تولید سوالات"
-              )}
-            </Button>
-          </>
-        )}
-        {!submitted && currentField.roadmap.length === 0 ? (
-          <div className="flex flex-col gap-3">
-            {questions && (
-              <>
-                {questions.map(
-                  (q, index) =>
-                    q.options && (
-                      <Fragment key={q.id}>
-                        <h2>{q.question}</h2>
-                        <RadioGroup
-                          className="flex flex-col gap-3"
-                          dir="rtl"
-                          value={answers[index]?.toString()}
-                          onValueChange={(value) => {
-                            handleAnswerChange(index, value);
-                            console.log(answers);
-                          }}
-                        >
-                          {q.options.map((option) => (
-                            <div key={option.id} className="flex gap-3">
-                              <RadioGroupItem
-                                value={option.value}
-                                id={`${q.id.toString()}-${option.id.toString()}`}
-                              />
-                              <Label
-                                htmlFor={`${q.id.toString()}-${option.id.toString()}`}
-                              >
-                                {option.value}
-                              </Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      </Fragment>
-                    )
-                )}
-                <Button
-                  onClick={() => {
-                    setSubmitted(true);
-                  }}
-                >
-                  ثبت جواب‌ها
-                </Button>
-              </>
-            )}
-          </div>
-        ) : (
-          <>
-            {currentField.roadmap.length === 0 ? (
+    <div>
+      {currentField && (
+        <div className="flex flex-col gap-3 min-h-96">
+          <h1 className="text-2xl text-primary text-center bg-secondary rounded-md">
+            {currentField.name}
+          </h1>
+
+          {!questions && currentField.roadmap.length === 0 && (
+            <>
               <Button
+                onClick={() => generateQuestion(params.slug)}
                 disabled={loading}
-                onClick={() => {
-                  const questionArray = questions.map((q) => q.question);
-                  findWeakness({ questions: questionArray, answers });
-                }}
               >
                 {loading ? (
                   <Image
@@ -449,107 +404,177 @@ export default function Home({ params }) {
                     alt="loading"
                   />
                 ) : (
-                  "تولید نقشه راه"
+                  "تولید سوالات"
                 )}
               </Button>
-            ) : (
-              currentField?.roadmap.map(
-                (item) =>
-                  item.subtopics && (
-                    <div
-                      key={item.id}
-                      className="flex flex-col justify-center items-center *:w-full"
-                    >
-                      <h1 className="mb-4">{item.topic}</h1>
-                      <ul>
-                        {item.subtopics &&
-                          item.subtopics.map((sub, index) => (
-                            <li
-                              key={index}
-                              className="grid grid-cols-4 p-2 w-full items-center content-stretch"
-                            >
-                              <div className="flex relative items-center gap-2 col-span-3">
-                                <input
-                                  className="min-w-4 min-h-4
-                                  peer cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border border-slate-300 checked:bg-white checked:border-slate-800"
-                                  type="checkbox"
-                                  checked={sub.isChecked}
-                                  onChange={(event) =>
-                                    handleCheckboxChange(
-                                      event.target.checked,
-                                      sub.name,
-                                      item.id
-                                    )
-                                  }
-                                  id={`${sub.name}-${item.name}`}
+            </>
+          )}
+          {!submitted && currentField.roadmap.length === 0 ? (
+            <div className="flex flex-col gap-3">
+              {questions && (
+                <>
+                  {questions.map(
+                    (q, index) =>
+                      q.options && (
+                        <Fragment key={q.id}>
+                          <h2>{q.question}</h2>
+                          <RadioGroup
+                            className="flex flex-col gap-3"
+                            dir="rtl"
+                            value={answers[index]?.toString()}
+                            onValueChange={(value) => {
+                              handleAnswerChange(index, value);
+                              console.log(answers);
+                            }}
+                          >
+                            {q.options.map((option) => (
+                              <div key={option.id} className="flex gap-3">
+                                <RadioGroupItem
+                                  value={option.value}
+                                  id={`${q.id.toString()}-${option.id.toString()}`}
                                 />
-                                <Check
-                                  size={25}
-                                  class="absolute text-primary opacity-0 peer-checked:opacity-100 -right-2"
-                                />
-
-                                <label htmlFor={`${sub.name}-${item.name}`}>
-                                  {sub.name}
-                                </label>
+                                <Label
+                                  htmlFor={`${q.id.toString()}-${option.id.toString()}`}
+                                >
+                                  {option.value}
+                                </Label>
                               </div>
-
-                              <Button
-                                className="w-[25px] h-[25px] p-px justify-self-end"
-                                variant="outline"
-                                disabled={loading}
-                                value={sub.name}
-                                onClick={() => {
-                                  getChecklist(sub.name, item.topic);
-                                }}
+                            ))}
+                          </RadioGroup>
+                        </Fragment>
+                      )
+                  )}
+                  <Button
+                    onClick={() => {
+                      setSubmitted(true);
+                    }}
+                  >
+                    ثبت جواب‌ها
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              {currentField.roadmap.length === 0 ? (
+                <Button
+                  disabled={loading}
+                  onClick={() => {
+                    const questionArray = questions.map((q) => q.question);
+                    findWeakness({ questions: questionArray, answers });
+                  }}
+                >
+                  {loading ? (
+                    <Image
+                      src={loadingSvg}
+                      width={20}
+                      height={20}
+                      alt="loading"
+                    />
+                  ) : (
+                    "تولید نقشه راه"
+                  )}
+                </Button>
+              ) : (
+                currentField?.roadmap.map(
+                  (item) =>
+                    item.subtopics && (
+                      <div
+                        key={item.id}
+                        className="flex flex-col justify-center items-center *:w-full"
+                      >
+                        <h1 className="mb-4">{item.topic}</h1>
+                        <ul>
+                          {item.subtopics &&
+                            item.subtopics.map((sub, index) => (
+                              <li
+                                key={index}
+                                className="grid grid-cols-4 p-2 w-full items-center content-stretch"
                               >
-                                <RiAiGenerate color="#453875" />
-                              </Button>
-                              {sub.checklist && sub.checklist.length > 0 && (
-                                <ul className="col-span-4 flex flex-col gap-4 py-4 items-center">
-                                  {sub.checklist.map((i) => (
-                                    <li
-                                      key={i.name}
-                                      className="flex gap-5 relative w-full h-[80px]"
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        id={i.name}
-                                        value={i.name}
-                                        checked={i.isChecked}
-                                        onChange={(event) =>
-                                          handleChecklistItemChange(
-                                            event.target.checked,
-                                            i.name,
-                                            sub.name,
-                                            item.id
-                                          )
-                                        }
-                                        className="peer appearance-none w-full h-full bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
-                                      />
-                                      <label
-                                        className="absolute w-full pr-4 pl-10 self-center leading-tight"
-                                        htmlFor={i.name}
+                                <div className="flex relative items-center gap-2 col-span-3">
+                                  <input
+                                    className="min-w-4 min-h-4
+                                  peer cursor-pointer transition-all appearance-none rounded shadow hover:shadow-md border border-slate-300 checked:bg-white checked:border-slate-800"
+                                    type="checkbox"
+                                    checked={sub.isChecked}
+                                    onChange={(event) =>
+                                      handleCheckboxChange(
+                                        event.target.checked,
+                                        sub.name,
+                                        item.id
+                                      )
+                                    }
+                                    id={`${sub.name}-${item.name}`}
+                                  />
+                                  <Check
+                                    size={25}
+                                    className="absolute text-primary opacity-0 peer-checked:opacity-100 -right-2"
+                                  />
+
+                                  <label htmlFor={`${sub.name}-${item.name}`}>
+                                    {sub.name}
+                                  </label>
+                                </div>
+
+                                <Button
+                                  className="w-[25px] h-[25px] p-px justify-self-end"
+                                  variant="outline"
+                                  disabled={loading}
+                                  value={sub.name}
+                                  onClick={() => {
+                                    getChecklist(sub.name, item.topic);
+                                  }}
+                                >
+                                  <RiAiGenerate color="#453875" />
+                                </Button>
+                                {sub.checklist && sub.checklist.length > 0 && (
+                                  <ul className="col-span-4 flex flex-col gap-4 py-4 items-center">
+                                    {sub.checklist.map((i) => (
+                                      <li
+                                        key={i.name}
+                                        className="flex gap-5 relative w-full h-[80px]"
                                       >
-                                        {i.name}
-                                      </label>
-                                      <TiInputChecked
-                                        color="#453875"
-                                        className="absolute left-4 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
-                                      />
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  )
-              )
-            )}
-          </>
-        )}
-      </div>
-    )
+                                        <input
+                                          type="checkbox"
+                                          id={i.name}
+                                          value={i.name}
+                                          checked={i.isChecked}
+                                          onChange={(event) =>
+                                            handleChecklistItemChange(
+                                              event.target.checked,
+                                              i.name,
+                                              sub.name,
+                                              item.id
+                                            )
+                                          }
+                                          className="peer appearance-none w-full h-full bg-white checked:bg-secondary checked:border-0 border-primary border transition-colors duration-300 rounded-lg "
+                                        />
+                                        <label
+                                          className="absolute w-full pr-4 pl-10 self-center leading-tight"
+                                          htmlFor={i.name}
+                                        >
+                                          {i.name}
+                                        </label>
+                                        <TiInputChecked
+                                          color="#453875"
+                                          className="absolute left-4 self-center transition-opacity duration-300 opacity-0 peer-checked:opacity-100"
+                                        />
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )
+                )
+              )}
+            </>
+          )}
+        </div>
+      )}
+      <ToastContainer />
+    </div>
   );
 }

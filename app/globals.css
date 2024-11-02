@@ -9,6 +9,9 @@
     text-wrap: balance;
   }
 }
+:root {
+  --toastify-color-info: #453875 !important;
+}
 
 @layer base {
   :root {
