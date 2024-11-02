@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import Navbar from "./components/navbar";
 import { GlobalProvider } from "@/context/context";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: "Skilla",
@@ -30,6 +31,7 @@ export default async function RootLayout({
             <div className="flex flex-col w-screen min-h-screen">
               <Navbar />
               <main className="p-4 sm:mx-auto sm:w-[400px]">{children}</main>
+              <Analytics />
               <footer className="bg-secondary mt-auto text-sm text-center p-1 text-white">
                 by{" "}
                 <a href="https://github.com/ftmhabt" className="text-primary">
