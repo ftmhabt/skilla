@@ -4,36 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-// import { useGlobalContext } from "@/context/context";
 import { db } from "@/db/db";
 import { useLiveQuery } from "dexie-react-hooks";
 export default function Skills() {
   const [skillInput, setSkillInput] = useState("");
-  // const { fields, setFields } = useGlobalContext();
 
-  // const handleAddSkill = () => {
-  //   if (skillInput.trim()) {
-  //     const newSkill = {
-  //       id: fields.length + 1,
-  //       name: skillInput,
-  //       roadmap: [],
-  //     };
-  //     setFields([...fields, newSkill]);
-  //     console.log(fields);
-  //     setSkillInput("");
-  //   }
-  // };
   const fields = useLiveQuery(() => db.fields.toArray());
   async function handleAddSkill() {
-    try {
-      // Add the new friend!
-      await db.fields.add({
-        name: skillInput,
-        roadmap: [],
-      });
-      setSkillInput("");
-    } catch (error) {
-      console.log(`Failed to add ${skillInput}: ${error}`);
+    if (skillInput) {
+      try {
+        await db.fields.add({
+          name: skillInput,
+          roadmap: [],
+        });
+        setSkillInput("");
+      } catch (error) {
+        console.log(`Failed to add ${skillInput}: ${error}`);
+      }
     }
   }
   return (
